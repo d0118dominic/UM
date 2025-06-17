@@ -41,7 +41,8 @@ def get_vs(T,m):
 def get_vth(T,m):
 	vth = np.sqrt(k*T/m)
 	return vth
-
+def get_vpar(v,B):
+	vpar = np.dot(v,B)/np.linalg.norm(B)
 # Scalar Pressures
 def get_pm(B):
 	pm = 0.5*(mu0**-1)*np.linalg.norm(B)**2
@@ -54,6 +55,16 @@ def get_pth(n,T):
 def get_brnorm(B):
 	brnorm = B[0]/np.linalg.norm(B)
 	return brnorm
+
+
+# NEED TESTING ##
+def get_ppar(n,T,B):  #B ant T tensor coord systems need to match for this
+	term1 = (T[0]*B[0]**2 + T[1]*B[1]**2 + T[2]*B[2]**2)/(np.linalg.norm(B)**2)
+	term2 = 2*(T[3]*B[0]*B[1] + T[4]*B[0]*B[2] + T[5]*B[1]*B[2])/(np.linalg.norm(B)**2)
+	T_par = term1+term2
+	P_par = n*T_par
+	return P_par
+
 
 
 def get_Tcomps(Ttensor,B):
