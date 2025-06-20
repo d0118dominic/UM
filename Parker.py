@@ -30,7 +30,7 @@ def reform(var):
 
 
 # Functions to get various useful parameters
-
+#%%
 # Velocities
 def get_va(B,n,m):
 	va = np.linalg.norm(B)/np.sqrt(mu0*n*m)
@@ -56,6 +56,11 @@ def get_brnorm(B):
 	brnorm = B[0]/np.linalg.norm(B)
 	return brnorm
 
+def get_deflection(B):
+	brnorm = get_brnorm(B)
+	theta = np.arccos(brnorm)*180/np.pi
+	return theta
+
 # NEED TESTING ##
 def get_ppar(n,T,B):  #B ant T tensor coord systems need to match for this
 	term1 = (T[0]*B[0]**2 + T[1]*B[1]**2 + T[2]*B[2]**2)/(np.linalg.norm(B)**2)
@@ -76,7 +81,7 @@ def get_Tcomps(Ttensor,B):
 trange = ['2024-10-29/00:00', '2024-10-31/00:00']
 # trange = ['2018-11-1', '2018-11-10'] #Dudok de wit 2020 Full interval
 trange = ['2022-02-25', '2022-02-28'] #Dudok de wit 2020 Full interval
-trange = ['2021-08-11/09:00', '2021-08-12/09:00'] # Soni 2024 Parker interval
+#trange = ['2021-08-11/09:00', '2021-08-12/09:00'] # Soni 2024 Parker interval
 
 Bfld_vars = pyspedas.projects.psp.fields(trange=trange, level='l2', time_clip=True)
 ACfld_vars = pyspedas.projects.psp.fields(trange=trange, datatype='dfb_ac_spec', level='l2',time_clip=True)
@@ -94,7 +99,7 @@ TiTensor_name = 'psp_spi_T_TENSOR_INST'
 Ti_name = 'psp_spi_TEMP'
 ni_name = 'psp_spi_DENS'
 
-interpvar_name = B_name
+interpvar_name = ni_name
 timeax = pytplot.get_data(interpvar_name).times
 
 tinterpol(B_name,interpvar_name,newname='B')
@@ -115,7 +120,6 @@ TiTensor = 1.602e-19*reform(pytplot.get_data('TiTensor'))
 
 # %%
 # Calculate B Magnitude & create Normalized Br/|B|
-
 Br_norm = np.zeros_like(Bvecs[:,0])
 vr_norm = np.zeros_like(Bvecs[:,0])
 P_mag = np.zeros_like(Br_norm)
@@ -124,34 +128,65 @@ va = np.zeros_like(Br_norm)
 vth = np.zeros_like(Br_norm)
 vs = np.zeros_like(Br_norm)
 beta = np.zeros_like(ni)
-v_ratio = np.zeros_like(ni)
 PiTensor = np.zeros_like(TiTensor)
 viandva = np.zeros([len(timeax),2])
+v_ratio = np.zeros([len(timeax),2])
+pressures = np.zeros([len(timeax),3])
+line = np.ones_like(ni)
+theta = np.zeros([len(timeax),2])
+theta_v = np.zeros([len(timeax),2])
 
 for i in range(len(Bvecs)):
-	Br_norm[i] = np.abs(get_brnorm(Bvecs[i]))
-	vr_norm[i] = np.abs(get_brnorm(vivecs[i]))
+	Br_norm[i] = get_brnorm(Bvecs[i])
+	vr_norm[i] = get_brnorm(vivecs[i])
 	P_mag[i] = get_pm(Bvecs[i])
 	P_th[i] = get_pth(ni[i],Ti[i])
 	va[i] = get_va(Bvecs[i],ni[i],mi)
 	vs[i] = get_vs(Ti[i],mi)
 	vth[i]  = get_vth(Ti[i],mi)
 	beta[i] = P_th[i]/P_mag[i]
-	v_ratio[i] = np.linalg.norm(vivecs[i])/va[i]
+	v_ratio[i] = [np.linalg.norm(vivecs[i])/va[i],1]
 	PiTensor[i] = ni[i]*TiTensor[i]
 	viandva[i] = [np.linalg.norm(vivecs[i]),va[i]]
-#plt.plot(beta,color='b')
-# plt.plot(v_ratio,color='r',label='Va/Vi')
-# plt.plot(beta,color='b',label='Pth/Pm')
-plt.plot(v_ratio)
+	pressures[i] = [P_mag[i] + P_th[i],P_mag[i],P_th[i]]
+	theta[i] = [get_deflection(Bvecs[i]),90]
+	theta_v[i] = [get_deflection(vivecs[i]),90]
+
+plt.plot(theta)
 # plt.ylim(0,5)
 plt.legend()
 # plt.axhline(y=1,linestyle='--',color='k')
 # %%
 # Make it a Tplot variable & plot it
+store_data('beta', data = {'x':timeax,'y':beta})
+store_data('theta', data = {'x':timeax,'y':theta})
+store_data('theta_v', data = {'x':timeax,'y':theta_v})
+store_data('vi', data = {'x':timeax,'y':vivecs})
+store_data('n', data = {'x':timeax,'y':ni})
+store_data('T', data = {'x':timeax,'y':Ti})
+store_data('Pm', data = {'x':timeax,'y':P_mag})
+store_data('Pt', data = {'x':timeax,'y':P_th})
+store_data('pressures', data = {'x':timeax,'y':pressures})
+store_data('v_ratio', data = {'x':timeax,'y':v_ratio})
+store_data('vs_ratio', data = {'x':timeax,'y':vs/va})
 store_data('viandva', data = {'x':timeax,'y':viandva})
 store_data('Br_norm', data = {'x':timeax,'y':Br_norm})
 store_data('vr_norm', data = {'x':timeax,'y':vr_norm})
-tplot(['Br_norm','vr_norm','viandva'])
+pyspedas.ylim('v_ratio',0,5)
+pyspedas.options('v_ratio', 'ytitle', 'Vp/Va')
+pyspedas.options('v_ratio', 'linestyle', ['-','--'])
+pyspedas.options('v_ratio', 'color', 'k')
+pyspedas.tsmooth('v_ratio',0) # creates a 'v_ratio-s' variable
+pyspedas.ylim('theta',0,180)
+pyspedas.ylim('beta',0,2)
+pyspedas.options('theta', 'ytitle', 'Deflection Angle (degrees)')
+pyspedas.options('theta', 'linestyle', ['-','--'])
+pyspedas.options('theta', 'color', 'k')
+pyspedas.tsmooth('v_ratio',0) # creates a 'v_ratio-s' variable
+tplot(['Br_norm','theta','theta_v','beta',B_name])
+
+
+# %%
+
 
 # %%
