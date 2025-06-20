@@ -56,7 +56,6 @@ def get_brnorm(B):
 	brnorm = B[0]/np.linalg.norm(B)
 	return brnorm
 
-
 # NEED TESTING ##
 def get_ppar(n,T,B):  #B ant T tensor coord systems need to match for this
 	term1 = (T[0]*B[0]**2 + T[1]*B[1]**2 + T[2]*B[2]**2)/(np.linalg.norm(B)**2)
@@ -138,13 +137,13 @@ for i in range(len(Bvecs)):
 	vs[i] = get_vs(Ti[i],mi)
 	vth[i]  = get_vth(Ti[i],mi)
 	beta[i] = P_th[i]/P_mag[i]
-	v_ratio[i] = va[i]/np.linalg.norm(vivecs[i])
+	v_ratio[i] = np.linalg.norm(vivecs[i])/va[i]
 	PiTensor[i] = ni[i]*TiTensor[i]
 	viandva[i] = [np.linalg.norm(vivecs[i]),va[i]]
 #plt.plot(beta,color='b')
 # plt.plot(v_ratio,color='r',label='Va/Vi')
 # plt.plot(beta,color='b',label='Pth/Pm')
-plt.plot(PiTensor)
+plt.plot(v_ratio)
 # plt.ylim(0,5)
 plt.legend()
 # plt.axhline(y=1,linestyle='--',color='k')
