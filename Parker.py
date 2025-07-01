@@ -94,8 +94,8 @@ def get_Tcomps(Ttensor,B):
 
 # trange = ['2024-10-29/00:00', '2024-10-31/00:00']
 # trange = ['2018-11-1', '2018-11-10'] #Dudok de wit 2020 Full interval
-#trange = ['2021-04-28', '2021-04-30'] # Encounter 8 (some sub-Alfvenic)
-trange = ['2021-08-09/12:00', '2021-08-10/00:00'] # Encounter 9 (some sub-Alfvenic)
+trange = ['2021-04-28', '2021-04-30'] # Encounter 8 (some sub-Alfvenic)
+#trange = ['2021-08-09/12:00', '2021-08-10/00:00'] # Encounter 9 (some sub-Alfvenic)
 #trange = ['2022-02-25', '2022-02-28'] #Dudok de wit 2020 Full interval
 #trange = ['2018-11-05/00:00', '2018-11-05/03:00'] # Bale 2019 event (includes Sr)
 #trange = ['2021-08-11/09:00', '2021-08-12/09:00'] # Soni 2024 Parker interval
@@ -300,7 +300,7 @@ tplot(['Ma', 'beta','theta','Br_norm'])
 
 # Scatter Plot w/ colorbar
 cm = plt.cm.get_cmap('seismic')
-sc=plt.scatter(v_ratio[:,0],theta[:,0],c=K[:,0],s=1,vmin=-0.002,vmax=0.002,cmap=cm)
+sc=plt.scatter(v_ratio[:,0],theta[:,0],c=beta[:,0],s=1,vmin=0,vmax=2,cmap=cm)
 
 plt.colorbar(sc,label="Radial Poynting Flux Sr")
 plt.xlim(0,2)
