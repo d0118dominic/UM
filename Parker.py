@@ -194,12 +194,14 @@ for i in range(len(Bvecs)):
 	theta[i] = [get_deflection(Bvecs[i]),90]
 	theta_v[i] = [get_deflection(vivecs[i]),90]
 
-Br_mean = get_mean(Br,5)
-Vr_mean = get_mean(Vr,5)
-plt.plot((Br - Br_mean)/Br_mean)
-plt.plot((Vr - Vr_mean)/Vr_mean)
-plt.xlabel('Time')
-plt.ylabel('dBr/Br , dVr/Vr')
+Br_mean = get_mean(Br,21)
+Vr_mean = get_mean(Vr,21)
+deflection_param = Br/Br_mean
+# plt.plot((Br - Br_mean)/Br_mean)
+# plt.plot((Vr - Vr_mean)/Vr_mean)
+# plt.xlabel('Time')
+# plt.ylabel('dBr/Br , dVr/Vr')
+plt.plot(deflection_param)
 plt.ylim(-10,10)
 
 # %%
