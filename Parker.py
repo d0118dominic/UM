@@ -73,7 +73,17 @@ def get_vxb(v,B):
 	vxb = np.cross(v,B)
 	return vxb
 
+def get_K(m,n,v):
+	K = 0.5*m*n*v**3
+	return K
 
+def get_H(v,P):
+	H = 0.5*v*np.trace(P) + np.dot(v,P)
+	return H
+
+def get_S(E,B):
+	S = np.cross(E,B)/mu0
+	return S
 
 def get_Tcomps(Ttensor,B):
 	pass
@@ -128,6 +138,11 @@ TiTensor = 1.602e-19*reform(pytplot.get_data('TiTensor'))
 Br_norm = np.zeros_like(Bvecs[:,0])
 vr_norm = np.zeros_like(Bvecs[:,0])
 E_conv = np.zeros_like(Bvecs)
+
+S = np.zeros_like(Bvecs)
+H = np.zeros_like(Bvecs)
+K = np.zeros_like(Bvecs)
+
 ExB = np.zeros_like(Bvecs)
 P_mag = np.zeros_like(Br_norm)
 P_th = np.zeros_like(ni)
@@ -144,7 +159,11 @@ theta = np.zeros([len(timeax),2])
 theta_v = np.zeros([len(timeax),2])
 
 for i in range(len(Bvecs)):
+	
 	E_conv[i] = -get_vxb(vivecs[i],Bvecs[i])
+	S[i] = get_S(E_conv[i],Bvecs[i])
+	K[i] = get_K(mi,ni[i],vivecs[i])
+	
 	ExB[i] = get_vxb(E_conv[i],Bvecs[i]) # Will probably need to revisit under better assumptions
 	Br_norm[i] = get_brnorm(Bvecs[i])
 	vr_norm[i] = get_brnorm(vivecs[i])
@@ -168,15 +187,22 @@ plt.legend()
 # %%
 # Make it a Tplot variable & plot it
 
-store_data('E_conv', data = {'x':timeax,'y':E_conv})
+store_data('S', data = {'x':timeax,'y':E_conv})
 
 #--------------------------------------------------------------------------------------
 # Radial Poynting Flux.  This is still shaky, as it assumes E = -vxB then uses that E for ExB
 # In principle, E x (-vxB) = 0 by definition, so idk why it becomes a non-zero signal
 # Better versions of this should use direct Efield data or maybe use background parker spiral for the ExB
 # but not for the calculation of -vxB
-store_data('Sr', data = {'x':timeax,'y':ExB[:,0]/mu0})
-store_data('Sr_norm', data = {'x':timeax,'y':ExB[:,0]/(P_mag*mu0)})
+# store_data('Sr', data = {'x':timeax,'y':ExB[:,0]/mu0})
+# store_data('Sr_norm', data = {'x':timeax,'y':ExB[:,0]/(P_mag*mu0)})
+
+
+store_data('Sr', data = {'x':timeax,'y':S[:,0]})
+store_data('Sr_norm', data = {'x':timeax,'y':S[:,0]/(P_mag)})
+
+store_data('Kr', data = {'x':timeax,'y':K[:,0]})
+store_data('Kr_norm', data = {'x':timeax,'y':K[:,0]/(P_th)})
 #---------------------------------------------------------------------------------------
 
 
@@ -250,7 +276,7 @@ pyspedas.options('theta', 'color', 'k')
 pyspedas.tsmooth('v_ratio',0) # creates a 'v_ratio-s' variable
 
 
-tplot(['Sr','Sr_norm','P_mag'])
+tplot(['Kr_norm','Sr_norm','Pm'])
 
 
 # %%
