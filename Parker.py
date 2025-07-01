@@ -97,7 +97,7 @@ def get_Tcomps(Ttensor,B):
 #trange = ['2021-04-28', '2021-04-30'] # Encounter 8 (some sub-Alfvenic)
 trange = ['2021-08-09/12:00', '2021-08-10/00:00'] # Encounter 9 (some sub-Alfvenic)
 #trange = ['2022-02-25', '2022-02-28'] #Dudok de wit 2020 Full interval
-trange = ['2018-11-05/00:00', '2018-11-05/03:00'] # Bale 2019 event (includes Sr)
+#trange = ['2018-11-05/00:00', '2018-11-05/03:00'] # Bale 2019 event (includes Sr)
 #trange = ['2021-08-11/09:00', '2021-08-12/09:00'] # Soni 2024 Parker interval
 
 Bfld_vars = pyspedas.projects.psp.fields(trange=trange, level='l2', time_clip=True)
@@ -116,7 +116,7 @@ TiTensor_name = 'psp_spi_T_TENSOR_INST'
 Ti_name = 'psp_spi_TEMP'
 ni_name = 'psp_spi_DENS'
 
-interpvar_name = B_name
+interpvar_name = vi_name
 timeax = pytplot.get_data(interpvar_name).times
 
 tinterpol(B_name,interpvar_name,newname='B')
@@ -135,6 +135,7 @@ TiTensor = 1.602e-19*reform(pytplot.get_data('TiTensor'))
 
 # %%
 # Calculate B Magnitude & create Normalized Br/|B|
+
 Br_norm = np.zeros_like(Bvecs[:,0])
 vr_norm = np.zeros_like(Bvecs[:,0])
 E_conv = np.zeros_like(Bvecs)
@@ -142,17 +143,22 @@ E_conv = np.zeros_like(Bvecs)
 S = np.zeros_like(Bvecs)
 H = np.zeros_like(Bvecs)
 K = np.zeros_like(Bvecs)
-
 ExB = np.zeros_like(Bvecs)
+
 P_mag = np.zeros_like(Br_norm)
 P_th = np.zeros_like(ni)
+
 va = np.zeros_like(Br_norm)
 vth = np.zeros_like(Br_norm)
 vs = np.zeros_like(Br_norm)
+
 PiTensor = np.zeros_like(TiTensor)
+
+
+beta = np.zeros([len(timeax),2])
+Br_norm = np.zeros([len(timeax),2])
 viandva = np.zeros([len(timeax),2])
 v_ratio = np.zeros([len(timeax),2])
-beta = np.zeros([len(timeax),2])
 pressures = np.zeros([len(timeax),3])
 line = np.ones_like(ni)
 theta = np.zeros([len(timeax),2])
@@ -165,7 +171,7 @@ for i in range(len(Bvecs)):
 	K[i] = get_K(mi,ni[i],vivecs[i])
 	
 	ExB[i] = get_vxb(E_conv[i],Bvecs[i]) # Will probably need to revisit under better assumptions
-	Br_norm[i] = get_brnorm(Bvecs[i])
+	Br_norm[i] = [get_brnorm(Bvecs[i]),0]
 	vr_norm[i] = get_brnorm(vivecs[i])
 	P_mag[i] = get_pm(Bvecs[i])
 	P_th[i] = get_pth(ni[i],Ti[i])
@@ -190,20 +196,16 @@ plt.legend()
 store_data('S', data = {'x':timeax,'y':E_conv})
 
 #--------------------------------------------------------------------------------------
-# Radial Poynting Flux.  This is still shaky, as it assumes E = -vxB then uses that E for ExB
+# Energy Fluxes.  This is still shaky, as it assumes E = -vxB then uses that E for ExB
 # In principle, E x (-vxB) = 0 by definition, so idk why it becomes a non-zero signal
 # Better versions of this should use direct Efield data or maybe use background parker spiral for the ExB
 # but not for the calculation of -vxB
-# store_data('Sr', data = {'x':timeax,'y':ExB[:,0]/mu0})
-# store_data('Sr_norm', data = {'x':timeax,'y':ExB[:,0]/(P_mag*mu0)})
-
 
 store_data('S', data = {'x':timeax,'y':S})
 store_data('Sr', data = {'x':timeax,'y':S[:,0]})
 store_data('St', data = {'x':timeax,'y':S[:,1]})
 store_data('Sn', data = {'x':timeax,'y':S[:,2]})
-store_data('Sr_norm', data = {'x':timeax,'y':S[:,0]/(P_mag)})
-
+store_data('Sr_norm', data = {'x':timeax,'y':S[:,0]/(P_mag)}) 
 store_data('K', data = {'x':timeax,'y':K})
 store_data('Kr', data = {'x':timeax,'y':K[:,0]})
 store_data('Kt', data = {'x':timeax,'y':K[:,1]})
@@ -261,29 +263,58 @@ store_data('T', data = {'x':timeax,'y':Ti})
 store_data('viandva', data = {'x':timeax,'y':viandva})
 
 
-pyspedas.ylim('v_ratio',0,5)
-pyspedas.options('Ma', 'ytitle', 'Vp/Va')
-
-pyspedas.options('Ma', 'ylog', 1)
-pyspedas.options('beta', 'ylog', 1)
-
-pyspedas.options('Ma', 'linestyle', ['-','--'])
-pyspedas.options('Ma', 'color', 'k')
-pyspedas.ylim('Ma', 0.3,3)
-
-pyspedas.options('beta', 'linestyle', ['-','--'])
-pyspedas.options('beta', 'color', 'k')
-pyspedas.ylim('beta', 0.1,10)
-
-pyspedas.tsmooth('Ma',0) # creates a 'Ma-s' variable
-pyspedas.ylim('theta',0,180)
-pyspedas.options('theta', 'ytitle', 'Deflection Angle (degrees)')
-pyspedas.options('theta', 'linestyle', ['-','--'])
-pyspedas.options('theta', 'color', 'k')
 pyspedas.tsmooth('v_ratio',0) # creates a 'v_ratio-s' variable
 
 
 tplot(['Kr','Sr'])
+
+
+# %%
+# Construct Timeseries plots for eventual paper
+# Plot 1: 
+
+pyspedas.options('Ma', 'ytitle', 'Vp/Va')
+pyspedas.options('Ma', 'ylog', 1)
+pyspedas.options('beta', 'ylog', 1)
+
+pyspedas.ylim('Ma',0.1,10)
+pyspedas.ylim('beta', 0.1,10)
+pyspedas.ylim('theta',0,180)
+
+pyspedas.tsmooth('Ma',0) # creates a 'Ma-s' variable
+pyspedas.options('Ma', 'linestyle', ['-','--'])
+pyspedas.options('Ma', 'color', 'k')
+pyspedas.options('theta', 'linestyle', ['-','--'])
+pyspedas.options('theta', 'color', 'k')
+pyspedas.options('theta', 'ytitle', 'Deflection Angle (degrees)')
+pyspedas.options('beta','ytitle','Plasma Beta')
+pyspedas.options('beta', 'linestyle', ['-','--'])
+pyspedas.options('beta', 'color', 'k')
+
+
+pyspedas.options('Br_norm','color', 'k')
+pyspedas.options('Br_norm','linestyle', ['-','--'])
+tplot(['Ma', 'beta','theta','Br_norm'])
+
+# %%
+
+# Scatter Plot w/ colorbar
+cm = plt.cm.get_cmap('seismic')
+sc=plt.scatter(v_ratio[:,0],theta[:,0],c=K[:,0],s=1,vmin=-0.002,vmax=0.002,cmap=cm)
+
+plt.colorbar(sc,label="Radial Poynting Flux Sr")
+plt.xlim(0,2)
+plt.ylim(0,180)
+
+plt.axhline(y=90,c='k')
+plt.axvline(x=1,c='k')
+plt.xlabel('Alfven Mach Number Ma')
+plt.ylabel('Deflection Angle (degrees)')
+plt.show()
+
+
+
+# %%
 
 
 # %%
