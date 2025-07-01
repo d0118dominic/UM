@@ -89,15 +89,19 @@ def get_Tcomps(Ttensor,B):
 	pass
 	return
 
+def get_mean(var,int):   #Take a timeseries and compute the mean (basically smooth outsmall flucs over some interval)
+	box = np.ones(int)/int
+	smoothed_var = np.convolve(var,box,mode='same')
+	return smoothed_var
 # %%
 # Get Mag Data
 
 # trange = ['2024-10-29/00:00', '2024-10-31/00:00']
 # trange = ['2018-11-1', '2018-11-10'] #Dudok de wit 2020 Full interval
-trange = ['2021-04-28', '2021-04-30'] # Encounter 8 (some sub-Alfvenic)
+#trange = ['2021-04-28', '2021-04-30'] # Encounter 8 (some sub-Alfvenic)
 #trange = ['2021-08-09/12:00', '2021-08-10/00:00'] # Encounter 9 (some sub-Alfvenic)
 #trange = ['2022-02-25', '2022-02-28'] #Dudok de wit 2020 Full interval
-#trange = ['2018-11-05/00:00', '2018-11-05/03:00'] # Bale 2019 event (includes Sr)
+trange = ['2018-11-05/00:00', '2018-11-05/03:00'] # Bale 2019 event (includes Sr)
 #trange = ['2021-08-11/09:00', '2021-08-12/09:00'] # Soni 2024 Parker interval
 
 Bfld_vars = pyspedas.projects.psp.fields(trange=trange, level='l2', time_clip=True)
@@ -137,6 +141,9 @@ TiTensor = 1.602e-19*reform(pytplot.get_data('TiTensor'))
 # Calculate B Magnitude & create Normalized Br/|B|
 
 Br_norm = np.zeros_like(Bvecs[:,0])
+Br = np.zeros_like(Bvecs[:,0])
+Vr = np.zeros_like(Bvecs[:,0])
+Br_mean = np.zeros_like(Bvecs[:,0])
 vr_norm = np.zeros_like(Bvecs[:,0])
 E_conv = np.zeros_like(Bvecs)
 
@@ -165,7 +172,8 @@ theta = np.zeros([len(timeax),2])
 theta_v = np.zeros([len(timeax),2])
 
 for i in range(len(Bvecs)):
-	
+	Br[i] = Bvecs[i,0]
+	Vr[i] = vivecs[i,0]
 	E_conv[i] = -get_vxb(vivecs[i],Bvecs[i])
 	S[i] = get_S(E_conv[i],Bvecs[i])
 	K[i] = get_K(mi,ni[i],vivecs[i])
@@ -186,14 +194,16 @@ for i in range(len(Bvecs)):
 	theta[i] = [get_deflection(Bvecs[i]),90]
 	theta_v[i] = [get_deflection(vivecs[i]),90]
 
-plt.plot(theta)
-# plt.ylim(0,5)
-plt.legend()
-# plt.axhline(y=1,linestyle='--',color='k')
-# %%
-# Make it a Tplot variable & plot it
+Br_mean = get_mean(Br,5)
+Vr_mean = get_mean(Vr,5)
+plt.plot((Br - Br_mean)/Br_mean)
+plt.plot((Vr - Vr_mean)/Vr_mean)
+plt.xlabel('Time')
+plt.ylabel('dBr/Br , dVr/Vr')
+plt.ylim(-10,10)
 
-store_data('S', data = {'x':timeax,'y':E_conv})
+# %%
+# Make Tplot variables
 
 #--------------------------------------------------------------------------------------
 # Energy Fluxes.  This is still shaky, as it assumes E = -vxB then uses that E for ExB
@@ -261,12 +271,6 @@ store_data('T', data = {'x':timeax,'y':Ti})
 
 # Both Velocities on one plot
 store_data('viandva', data = {'x':timeax,'y':viandva})
-
-
-pyspedas.tsmooth('v_ratio',0) # creates a 'v_ratio-s' variable
-
-
-tplot(['Kr','Sr'])
 
 
 # %%
