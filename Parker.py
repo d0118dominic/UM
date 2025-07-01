@@ -97,7 +97,7 @@ def get_Tcomps(Ttensor,B):
 #trange = ['2021-04-28', '2021-04-30'] # Encounter 8 (some sub-Alfvenic)
 trange = ['2021-08-09/12:00', '2021-08-10/00:00'] # Encounter 9 (some sub-Alfvenic)
 #trange = ['2022-02-25', '2022-02-28'] #Dudok de wit 2020 Full interval
-#trange = ['2018-11-05/00:00', '2018-11-05/03:00'] # Bale 2019 event (includes Sr)
+trange = ['2018-11-05/00:00', '2018-11-05/03:00'] # Bale 2019 event (includes Sr)
 #trange = ['2021-08-11/09:00', '2021-08-12/09:00'] # Soni 2024 Parker interval
 
 Bfld_vars = pyspedas.projects.psp.fields(trange=trange, level='l2', time_clip=True)
@@ -116,7 +116,7 @@ TiTensor_name = 'psp_spi_T_TENSOR_INST'
 Ti_name = 'psp_spi_TEMP'
 ni_name = 'psp_spi_DENS'
 
-interpvar_name = vi_name
+interpvar_name = B_name
 timeax = pytplot.get_data(interpvar_name).times
 
 tinterpol(B_name,interpvar_name,newname='B')
@@ -198,11 +198,18 @@ store_data('S', data = {'x':timeax,'y':E_conv})
 # store_data('Sr_norm', data = {'x':timeax,'y':ExB[:,0]/(P_mag*mu0)})
 
 
+store_data('S', data = {'x':timeax,'y':S})
 store_data('Sr', data = {'x':timeax,'y':S[:,0]})
+store_data('St', data = {'x':timeax,'y':S[:,1]})
+store_data('Sn', data = {'x':timeax,'y':S[:,2]})
 store_data('Sr_norm', data = {'x':timeax,'y':S[:,0]/(P_mag)})
 
+store_data('K', data = {'x':timeax,'y':K})
 store_data('Kr', data = {'x':timeax,'y':K[:,0]})
+store_data('Kt', data = {'x':timeax,'y':K[:,1]})
+store_data('Kn', data = {'x':timeax,'y':K[:,2]})
 store_data('Kr_norm', data = {'x':timeax,'y':K[:,0]/(P_th)})
+store_data('E_conv', data = {'x':timeax,'y':E_conv})
 #---------------------------------------------------------------------------------------
 
 
@@ -276,7 +283,7 @@ pyspedas.options('theta', 'color', 'k')
 pyspedas.tsmooth('v_ratio',0) # creates a 'v_ratio-s' variable
 
 
-tplot(['Kr_norm','Sr_norm','Pm'])
+tplot(['Kr','Sr'])
 
 
 # %%
