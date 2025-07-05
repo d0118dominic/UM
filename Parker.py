@@ -14,7 +14,7 @@ eps0 = 8.85e-12   # C^2/Nm^2
 e = 1.602e-19 #C
 Z = 1 # 1 for H+, 2 for He2+
 gamma = 5/3
-k = 1.380649e-23
+kb = 1.380649e-23
 
 def reform(var):
 	if not isinstance(var[1][0],np.ndarray):
@@ -36,10 +36,10 @@ def get_va(B,n,m):
 	va = np.linalg.norm(B)/np.sqrt(mu0*n*m)
 	return va
 def get_vs(T,m):
-	vs = np.sqrt(gamma*Z*k*T/m)
+	vs = np.sqrt(gamma*Z*kb*T/m)
 	return vs
 def get_vth(T,m):
-	vth = np.sqrt(k*T/m)
+	vth = np.sqrt(kb*T/m)
 	return vth
 def get_vpar(v,B):
 	vpar = np.dot(v,B)/np.linalg.norm(B)
@@ -61,13 +61,16 @@ def get_deflection(B):
 	theta = np.arccos(brnorm)*180/np.pi
 	return theta
 
-# NEED TESTING ##
-def get_ppar(n,T,B):  #B ant T tensor coord systems need to match for this
+# NEED TESTING.  Having pyspedas path issues...##
+def get_parperps(n,T,B):  #B ant T tensor coord systems need to match for this
+	trace = T[0] + T[1] + T[2]
 	term1 = (T[0]*B[0]**2 + T[1]*B[1]**2 + T[2]*B[2]**2)/(np.linalg.norm(B)**2)
 	term2 = 2*(T[3]*B[0]*B[1] + T[4]*B[0]*B[2] + T[5]*B[1]*B[2])/(np.linalg.norm(B)**2)
-	T_par = term1+term2
-	P_par = n*T_par
-	return P_par
+	Tpar = term1+term2
+	Tperp=0.5*(trace-Tpar)
+	Ppar = n*kb*Tpar
+	Pperp = n*kb*Tperp
+	return Tpar,Tperp,Ppar,Pperp
 
 def get_vxb(v,B):
 	vxb = np.cross(v,B)
@@ -85,10 +88,6 @@ def get_S(E,B):
 	S = np.cross(E,B)/mu0
 	return S
 
-def get_Tcomps(Ttensor,B):
-	pass
-	return
-
 def get_mean(var,int):   #Take a timeseries and compute the mean (basically smooth outsmall flucs over some interval)
 	box = np.ones(int)/int
 	smoothed_var = np.convolve(var,box,mode='same')
@@ -101,6 +100,7 @@ def get_mean(var,int):   #Take a timeseries and compute the mean (basically smoo
 #trange = ['2021-04-28', '2021-04-30'] # Encounter 8 (some sub-Alfvenic)
 #trange = ['2021-08-09/12:00', '2021-08-10/00:00'] # Encounter 9 (some sub-Alfvenic)
 #trange = ['2022-02-25', '2022-02-28'] #Dudok de wit 2020 Full interval
+
 trange = ['2018-11-05/00:00', '2018-11-05/03:00'] # Bale 2019 event (includes Sr)
 #trange = ['2021-08-11/09:00', '2021-08-12/09:00'] # Soni 2024 Parker interval
 
@@ -115,7 +115,8 @@ swp_vars = pyspedas.projects.psp.spi(trange=trange,level='l3',time_clip=True)
 # Reform all data to simple arrays and convert to SI units 
 B_name = 'psp_fld_l2_mag_RTN'
 vi_name = 'psp_spi_VEL_RTN_SUN'
-vsc_name = 'psp_spi_VEL_SC'
+Bxyz_name = 'psp_spi_MAGF_INST'
+vxyz_name = 'psp_spi_VEL_INST'
 TiTensor_name = 'psp_spi_T_TENSOR_INST'
 Ti_name = 'psp_spi_TEMP'
 ni_name = 'psp_spi_DENS'
@@ -124,15 +125,17 @@ interpvar_name = vi_name
 timeax = pytplot.get_data(interpvar_name).times
 
 tinterpol(B_name,interpvar_name,newname='B')
+tinterpol(Bxyz_name,interpvar_name,newname='Bxyz')
+tinterpol(vxyz_name,interpvar_name,newname='vxyz')
 tinterpol(vi_name,interpvar_name,newname='vi')
-tinterpol(vsc_name,interpvar_name,newname='vsc')
 tinterpol(Ti_name,interpvar_name,newname='Ti')
 tinterpol(ni_name,interpvar_name,newname='ni')
 tinterpol(TiTensor_name,interpvar_name,newname='TiTensor')
 
 Bvecs = 1e-9*reform(pytplot.get_data('B'))
+Bxyz = 1e-9*reform(pytplot.get_data('Bxyz'))
+vxyz = 1e3*reform(pytplot.get_data('vxyz'))
 vivecs = 1e3*reform(pytplot.get_data('vi'))
-vscvecs = 1e3*reform(pytplot.get_data('vsc'))
 ni = 1e6*reform(pytplot.get_data('ni'))
 Ti = 1.602e-19*reform(pytplot.get_data('Ti'))
 TiTensor = 1.602e-19*reform(pytplot.get_data('TiTensor'))
@@ -158,8 +161,10 @@ P_th = np.zeros_like(ni)
 va = np.zeros_like(Br_norm)
 vth = np.zeros_like(Br_norm)
 vs = np.zeros_like(Br_norm)
-
-PiTensor = np.zeros_like(TiTensor)
+Tpar = np.zeros_like(Br_norm)
+Tperp = np.zeros_like(Br_norm)
+Ppar = np.zeros_like(Br_norm)
+Pperp = np.zeros_like(Br_norm)
 
 
 beta = np.zeros([len(timeax),2])
@@ -167,6 +172,7 @@ Br_norm = np.zeros([len(timeax),2])
 viandva = np.zeros([len(timeax),2])
 v_ratio = np.zeros([len(timeax),2])
 pressures = np.zeros([len(timeax),3])
+parperps = np.zeros([len(timeax),2])
 line = np.ones_like(ni)
 theta = np.zeros([len(timeax),2])
 theta_v = np.zeros([len(timeax),2])
@@ -177,6 +183,8 @@ for i in range(len(Bvecs)):
 	E_conv[i] = -get_vxb(vivecs[i],Bvecs[i])
 	S[i] = get_S(E_conv[i],Bvecs[i])
 	K[i] = get_K(mi,ni[i],vivecs[i])
+
+	Tpar[i],Tperp[i],Ppar[i],Pperp[i] = get_parperps(ni[i],TiTensor[i],Bxyz[i])
 	
 	ExB[i] = get_vxb(E_conv[i],Bvecs[i]) # Will probably need to revisit under better assumptions
 	Br_norm[i] = [get_brnorm(Bvecs[i]),0]
@@ -188,28 +196,33 @@ for i in range(len(Bvecs)):
 	vth[i]  = get_vth(Ti[i],mi)
 	beta[i] = [P_th[i]/P_mag[i],1]
 	v_ratio[i] = [np.linalg.norm(vivecs[i])/va[i],1]
-	PiTensor[i] = ni[i]*TiTensor[i]
 	viandva[i] = [np.linalg.norm(vivecs[i]),va[i]]
 	pressures[i] = [P_mag[i] + P_th[i],P_mag[i],P_th[i]]
+	parperps[i] = [Ppar[i], Pperp[i]]
 	theta[i] = [get_deflection(Bvecs[i]),90]
 	theta_v[i] = [get_deflection(vivecs[i]),90]
 
-Br_mean = get_mean(Br,21)
-Vr_mean = get_mean(Vr,21)
-deflection_param = Br/Br_mean
-# plt.plot((Br - Br_mean)/Br_mean)
-# plt.plot((Vr - Vr_mean)/Vr_mean)
+#Br_mean = get_mean(Br,2060)
+#Vr_mean = get_mean(Vr,2060)
+#Br_short = get_mean(Br,35)
+#Vr_short = get_mean(Vr,35)
+
+
+
+#deflection_param = Br/Br_mean 
+#plt.plot((Br_short - Br_mean)/Br_mean)
+#plt.plot((Vr_short - Vr_mean)/Vr_mean)
 # plt.xlabel('Time')
 # plt.ylabel('dBr/Br , dVr/Vr')
-plt.plot(deflection_param)
-plt.ylim(-10,10)
+#plt.plot(deflection_param)
+#plt.ylim(-2,2)
 
 # %%
 # Make Tplot variables
 
 #--------------------------------------------------------------------------------------
 # Energy Fluxes.  This is still shaky, as it assumes E = -vxB then uses that E for ExB
-# In principle, E x (-vxB) = 0 by definition, so idk why it becomes a non-zero signal
+# In principle, B x (-vxB) = 0 by definition, so idk why it becomes a non-zero signal
 # Better versions of this should use direct Efield data or maybe use background parker spiral for the ExB
 # but not for the calculation of -vxB
 
@@ -229,16 +242,21 @@ store_data('E_conv', data = {'x':timeax,'y':E_conv})
 
 
 # ------Angles---------------------------------
-store_data('theta', data = {'x':timeax,'y':theta})
-store_data('theta_v', data = {'x':timeax,'y':theta_v})
+#store_data('theta', data = {'x':timeax,'y':theta})
+#store_data('theta_v', data = {'x':timeax,'y':theta_v})
+#store_data('deflection', data = {'x':timeax,'y':deflection_param})
 #----------------------------------------------
 
 
 
-# ----Pressures-------------------------------
+# ----Pressures&Temps-------------------------------
 store_data('Pt', data = {'x':timeax,'y':P_th})
 store_data('Pm', data = {'x':timeax,'y':P_mag})
+store_data('Ppar', data = {'x':timeax,'y':Ppar})
+store_data('Pperp', data = {'x':timeax,'y':Pperp})
 store_data('pressures', data = {'x':timeax,'y':pressures})
+store_data('parperps', data = {'x':timeax,'y':parperps})
+
 #---------------------------------------------
 
 
@@ -300,22 +318,23 @@ pyspedas.options('beta', 'color', 'k')
 
 pyspedas.options('Br_norm','color', 'k')
 pyspedas.options('Br_norm','linestyle', ['-','--'])
-tplot(['Ma', 'beta','theta','Br_norm'])
+tplot(['Ma', 'beta','deflection','Br_norm'])
 
 # %%
 
 # Scatter Plot w/ colorbar
-cm = plt.cm.get_cmap('seismic')
-sc=plt.scatter(v_ratio[:,0],theta[:,0],c=beta[:,0],s=1,vmin=0,vmax=2,cmap=cm)
+cm = plt.cm.get_cmap('viridis')
+sc=plt.scatter(v_ratio[:,0],deflection_param,c=S[:,0],s=1,cmap=cm)
 
-plt.colorbar(sc,label="Radial Poynting Flux Sr")
+plt.colorbar(sc,label="sr")
 plt.xlim(0,2)
-plt.ylim(0,180)
+plt.ylim(-2,2)
 
-plt.axhline(y=90,c='k')
+
+plt.axhline(y=0,c='k')
 plt.axvline(x=1,c='k')
 plt.xlabel('Alfven Mach Number Ma')
-plt.ylabel('Deflection Angle (degrees)')
+plt.ylabel('Deflection')
 plt.show()
 
 
@@ -324,6 +343,4 @@ plt.show()
 
 
 # %%
-
-
 # %%
