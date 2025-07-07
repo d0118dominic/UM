@@ -43,11 +43,11 @@ def duration(trange):
 	duration_h = duration_m/60 #hours
 	return duration_m
 
-def mean_int():
+def mean_int(timeax,trange):
 	steps = len(timeax)
 	minutes = duration(trange)
-	mean_int = np.ceil(steps/minutes)
-	return mean_int
+	mean = np.ceil(steps/minutes)
+	return int(mean)
 
 # Velocities
 def get_va(B,n,m):
@@ -119,8 +119,12 @@ def get_mean(var,int):   #Take a timeseries and compute the mean (basically smoo
 #trange = ['2021-08-09/12:00', '2021-08-10/00:00'] # Encounter 9 (some sub-Alfvenic)
 #trange = ['2022-02-25', '2022-02-28'] #Dudok de wit 2020 Full interval
 
-trange = ['2018-11-05/00:00', '2018-11-05/03:00'] # Bale 2019 event (includes Sr)
+# trange = ['2018-11-05/00:00', '2018-11-05/03:00'] # Bale 2019 event (includes Sr)
 #trange = ['2021-08-11/09:00', '2021-08-12/09:00'] # Soni 2024 Parker interval
+trange = ['2024-09-30/00:00', '2024-09-30/23:59'] # E21
+# trange = ['2024-12-24/00:00', '2024-12-25/00:00'] # E22
+# trange = ['2025-03-22/00:00', '2025-03-23/00:00'] # E23
+# trange = ['2025-06-19/00:00', '2025-06-20/00:00'] # E24
 
 Bfld_vars = pyspedas.projects.psp.fields(trange=trange, level='l2', time_clip=True)
 ACfld_vars = pyspedas.projects.psp.fields(trange=trange, datatype='dfb_ac_spec', level='l2',time_clip=True)
@@ -141,7 +145,7 @@ ni_name = 'psp_spi_DENS'
 
 interpvar_name = vi_name
 timeax = pytplot.get_data(interpvar_name).times
-mean_int = mean_int()
+meaninterval = mean_int(timeax,trange)
 
 tinterpol(B_name,interpvar_name,newname='B')
 tinterpol(Bxyz_name,interpvar_name,newname='Bxyz')
@@ -161,10 +165,13 @@ TiTensor = 1.602e-19*reform(pytplot.get_data('TiTensor'))
 
 # %%
 # Calculate B Magnitude & create Normalized Br/|B|
+Br,Bt,Bn = np.zeros_like(Bvecs[:,0]),np.zeros_like(Bvecs[:,0]),np.zeros_like(Bvecs[:,0])
+vr,vt,vn = np.zeros_like(Bvecs[:,0]),np.zeros_like(Bvecs[:,0]),np.zeros_like(Bvecs[:,0])
+
+B_mag = np.zeros_like(Bvecs[:,0])
+v_mag = np.zeros_like(Bvecs[:,0])
 
 Br_norm = np.zeros_like(Bvecs[:,0])
-Br = np.zeros_like(Bvecs[:,0])
-Vr = np.zeros_like(Bvecs[:,0])
 Br_mean = np.zeros_like(Bvecs[:,0])
 vr_norm = np.zeros_like(Bvecs[:,0])
 E_conv = np.zeros_like(Bvecs)
@@ -185,7 +192,6 @@ Tperp = np.zeros_like(Br_norm)
 Ppar = np.zeros_like(Br_norm)
 Pperp = np.zeros_like(Br_norm)
 
-
 beta = np.zeros([len(timeax),2])
 Br_norm = np.zeros([len(timeax),2])
 viandva = np.zeros([len(timeax),2])
@@ -197,8 +203,11 @@ theta = np.zeros([len(timeax),2])
 theta_v = np.zeros([len(timeax),2])
 
 for i in range(len(Bvecs)):
-	Br[i] = Bvecs[i,0]
-	Vr[i] = vivecs[i,0]
+	Br[i], Bt[i], Bn[i] = Bvecs[i,0], Bvecs[i,1], Bvecs[i,2]
+	vr[i], vt[i], vn[i] = vivecs[i,0], vivecs[i,1], vivecs[i,2]
+	B_mag[i] = np.linalg.norm(Bvecs[i,:])
+	v_mag[i] = np.linalg.norm(vivecs[i,:])
+	
 	E_conv[i] = -get_vxb(vivecs[i],Bvecs[i])
 	S[i] = get_S(E_conv[i],Bvecs[i])
 	K[i] = get_K(mi,ni[i],vivecs[i])
@@ -221,20 +230,40 @@ for i in range(len(Bvecs)):
 	theta[i] = [get_deflection(Bvecs[i]),90]
 	theta_v[i] = [get_deflection(vivecs[i]),90]
 
-Br_mean = get_mean(Br,mean_int)
-Vr_mean = get_mean(Vr,mean_int)
-#Br_short = get_mean(Br,35)
-#Vr_short = get_mean(Vr,35)
+#%%
+#Get minute averaged quantities.  meaninterval = 1 min ##
+minutes = 10
+
+Bmag_mean = get_mean(B_mag,minutes*meaninterval)
+Br_mean = get_mean(Br,minutes*meaninterval)
+vmag_mean = get_mean(v_mag,minutes*meaninterval)
+n_mean = get_mean(ni,minutes*meaninterval)
+va_mean = Bmag_mean/np.sqrt(mu0*mi*n_mean)
+vr_mean = get_mean(vr,minutes*meaninterval)
+ma_mean = vmag_mean/va_mean
+
+Br_brmean = Br/Br_mean
+
+plt.plot(ma_mean)
+plt.plot(Br_brmean)
+plt.axhline(y=1,color='k',linestyle='--')
+plt.ylim(-2,2)
 
 
+#%%
+# Br_short = get_mean(Br,meaninterval)
+# Vr_short = get_mean(Vr,meaninterval)
 
-#deflection_param = Br/Br_mean 
+#deflection_param = Vr/Vr_mean 
 #plt.plot((Br_short - Br_mean)/Br_mean)
 #plt.plot((Vr_short - Vr_mean)/Vr_mean)
-# plt.xlabel('Time')
-# plt.ylabel('dBr/Br , dVr/Vr')
-#plt.plot(deflection_param)
-#plt.ylim(-2,2)
+plt.xlabel('Time')
+plt.ylabel('')
+plt.plot(ma_mean,label='Mach Number')
+plt.plot(beta[:,0],label='Pth/Pm')
+plt.axhline(y=1,color='k',linestyle = '--')
+plt.ylim(0,2)
+plt.legend()
 
 # %%
 # Make Tplot variables
@@ -337,13 +366,13 @@ pyspedas.options('beta', 'color', 'k')
 
 pyspedas.options('Br_norm','color', 'k')
 pyspedas.options('Br_norm','linestyle', ['-','--'])
-tplot(['Ma', 'beta','deflection','Br_norm'])
+tplot(['theta', 'beta',])
 
 # %%
 
 # Scatter Plot w/ colorbar
-cm = plt.cm.get_cmap('viridis')
-sc=plt.scatter(v_ratio[:,0],deflection_param,c=S[:,0],s=1,cmap=cm)
+cm = plt.cm.get_cmap('seismic')
+sc=plt.scatter(ma_mean,Br_brmean,c=S[:,0],s=3,cmap=cm,vmin=-0.3,vmax=0.3)
 
 plt.colorbar(sc,label="sr")
 plt.xlim(0,2)
