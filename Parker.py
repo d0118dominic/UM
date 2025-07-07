@@ -16,6 +16,12 @@ Z = 1 # 1 for H+, 2 for He2+
 gamma = 5/3
 kb = 1.380649e-23
 
+
+
+
+# Functions to get various useful parameters
+#%%
+
 def reform(var):
 	if not isinstance(var[1][0],np.ndarray):
 		newvar = np.zeros(len(var[0]))
@@ -27,10 +33,22 @@ def reform(var):
 		newvar[i] = var[1][i]
 	return newvar
 
+def duration(trange):
+	from datetime import datetime as dt
+	start = dt.strptime(trange[0], '%Y-%m-%d/%H:%M')
+	stop = dt.strptime(trange[1], '%Y-%m-%d/%H:%M')
+	duration = stop-start
+	duration_s = duration.total_seconds()
+	duration_m = duration_s/60 #minutes
+	duration_h = duration_m/60 #hours
+	return duration_m
 
+def mean_int():
+	steps = len(timeax)
+	minutes = duration(trange)
+	mean_int = np.ceil(steps/minutes)
+	return mean_int
 
-# Functions to get various useful parameters
-#%%
 # Velocities
 def get_va(B,n,m):
 	va = np.linalg.norm(B)/np.sqrt(mu0*n*m)
@@ -123,6 +141,7 @@ ni_name = 'psp_spi_DENS'
 
 interpvar_name = vi_name
 timeax = pytplot.get_data(interpvar_name).times
+mean_int = mean_int()
 
 tinterpol(B_name,interpvar_name,newname='B')
 tinterpol(Bxyz_name,interpvar_name,newname='Bxyz')
@@ -202,8 +221,8 @@ for i in range(len(Bvecs)):
 	theta[i] = [get_deflection(Bvecs[i]),90]
 	theta_v[i] = [get_deflection(vivecs[i]),90]
 
-#Br_mean = get_mean(Br,2060)
-#Vr_mean = get_mean(Vr,2060)
+Br_mean = get_mean(Br,mean_int)
+Vr_mean = get_mean(Vr,mean_int)
 #Br_short = get_mean(Br,35)
 #Vr_short = get_mean(Vr,35)
 
