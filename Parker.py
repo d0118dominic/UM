@@ -49,6 +49,12 @@ def mean_int(timeax,trange):
 	mean = np.ceil(steps/minutes)
 	return int(mean)
 
+def filter_angle(angle,floor,ceiling):
+	angle_reduced = angle
+	for i in range(len(timeax)): 
+		if (angle[i] < floor or angle[i]>ceiling): angle_reduced[i] = np.nan
+	return angle_reduced
+
 # Velocities
 def get_va(B,n,m):
 	va = np.linalg.norm(B)/np.sqrt(mu0*n*m)
@@ -79,6 +85,14 @@ def get_deflection(B):
 	theta = np.arccos(brnorm)*180/np.pi
 	return theta
 
+def get_angle(vec,meanvec):
+	term1 = np.dot(vec,meanvec)
+	term2 = np.dot(np.linalg.norm(vec),np.linalg.norm(meanvec))
+	term3 = term1/term2
+	term4 = np.arccos(term3)*180/np.pi
+	return term4
+
+
 # NEED TESTING.  Having pyspedas path issues...##
 def get_parperps(n,T,B):  #B ant T tensor coord systems need to match for this
 	trace = T[0] + T[1] + T[2]
@@ -106,10 +120,20 @@ def get_S(E,B):
 	S = np.cross(E,B)/mu0
 	return S
 
+
+
 def get_mean(var,int):   #Take a timeseries and compute the mean (basically smooth outsmall flucs over some interval)
 	box = np.ones(int)/int
 	smoothed_var = np.convolve(var,box,mode='same')
 	return smoothed_var
+
+def get_vecmean(vec,int):   # Vector mean
+	vec1_mean = get_mean(vec[:,0],minutes*meaninterval)
+	vec2_mean = get_mean(vec[:,1],minutes*meaninterval)
+	vec3_mean = get_mean(vec[:,2],minutes*meaninterval)
+	vec_mean = np.zeros_like(vec)
+	for i in range(len(vec_mean)): vec_mean[i] = np.array([vec1_mean[i],vec2_mean[i],vec3_mean[i]])
+	return vec_mean
 # %%
 # Get Mag Data
 
@@ -120,8 +144,8 @@ def get_mean(var,int):   #Take a timeseries and compute the mean (basically smoo
 #trange = ['2022-02-25', '2022-02-28'] #Dudok de wit 2020 Full interval
 
 # trange = ['2018-11-05/00:00', '2018-11-05/03:00'] # Bale 2019 event (includes Sr)
-#trange = ['2021-08-11/09:00', '2021-08-12/09:00'] # Soni 2024 Parker interval
-trange = ['2024-09-30/00:00', '2024-09-30/23:59'] # E21
+trange = ['2021-08-11/09:00', '2021-08-12/09:00'] # Soni 2024 Parker interval
+#trange = ['2024-09-30/00:00', '2024-09-30/23:59'] # E21
 # trange = ['2024-12-24/00:00', '2024-12-25/00:00'] # E22
 # trange = ['2025-03-22/00:00', '2025-03-23/00:00'] # E23
 # trange = ['2025-06-19/00:00', '2025-06-20/00:00'] # E24
@@ -231,24 +255,28 @@ for i in range(len(Bvecs)):
 	theta_v[i] = [get_deflection(vivecs[i]),90]
 
 #%%
-#Get minute averaged quantities.  meaninterval = 1 min ##
-minutes = 10
+# Get minute averaged quantities.  meaninterval = 1 min ##
+minutes = 1
 
+Bvecs_mean = get_vecmean(Bvecs,minutes*meaninterval)
+vivecs_mean = get_vecmean(vivecs,minutes*meaninterval)
 Bmag_mean = get_mean(B_mag,minutes*meaninterval)
-Br_mean = get_mean(Br,minutes*meaninterval)
 vmag_mean = get_mean(v_mag,minutes*meaninterval)
 n_mean = get_mean(ni,minutes*meaninterval)
 va_mean = Bmag_mean/np.sqrt(mu0*mi*n_mean)
-vr_mean = get_mean(vr,minutes*meaninterval)
 ma_mean = vmag_mean/va_mean
-
-Br_brmean = Br/Br_mean
+beta_mean = get_mean(beta[:,0], minutes*meaninterval)
 
 plt.plot(ma_mean)
-plt.plot(Br_brmean)
-plt.axhline(y=1,color='k',linestyle='--')
-plt.ylim(-2,2)
 
+#%%
+# Get deflection angle & related proxies
+angle = np.zeros_like(timeax)
+for i in range(len(timeax)): angle[i] = get_angle(Bvecs[i],Bvecs_mean[i])
+
+angle_reduced = filter_angle(angle,10,20)
+plt.plot(angle_reduced)
+plt.ylim(0,180)
 
 #%%
 # Br_short = get_mean(Br,meaninterval)
@@ -260,9 +288,9 @@ plt.ylim(-2,2)
 plt.xlabel('Time')
 plt.ylabel('')
 plt.plot(ma_mean,label='Mach Number')
-plt.plot(beta[:,0],label='Pth/Pm')
+plt.plot(beta_mean,label='Pth/Pm')
 plt.axhline(y=1,color='k',linestyle = '--')
-plt.ylim(0,2)
+plt.ylim(0,4)
 plt.legend()
 
 # %%
@@ -372,17 +400,18 @@ tplot(['theta', 'beta',])
 
 # Scatter Plot w/ colorbar
 cm = plt.cm.get_cmap('seismic')
-sc=plt.scatter(ma_mean,Br_brmean,c=S[:,0],s=3,cmap=cm,vmin=-0.3,vmax=0.3)
+sc=plt.scatter(ma_mean,theta[:,0],c=S[:,0],s=3,cmap=cm,vmin=-0.01,vmax=0.01)
+#sc=plt.scatter(ma_mean,Br_brmean,c=S[:,0],s=3,cmap=cm,vmin=-0.3,vmax=0.3)
 
 plt.colorbar(sc,label="sr")
 plt.xlim(0,2)
-plt.ylim(-2,2)
+plt.ylim(0,180)
 
 
-plt.axhline(y=0,c='k')
+plt.axhline(y=90,c='k')
 plt.axvline(x=1,c='k')
 plt.xlabel('Alfven Mach Number Ma')
-plt.ylabel('Deflection')
+plt.ylabel('Deflection Angle')
 plt.show()
 
 
