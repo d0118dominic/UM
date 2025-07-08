@@ -139,12 +139,12 @@ def get_vecmean(vec,int):   # Vector mean
 
 # trange = ['2024-10-29/00:00', '2024-10-31/00:00']
 # trange = ['2018-11-1', '2018-11-10'] #Dudok de wit 2020 Full interval
-#trange = ['2021-04-28', '2021-04-30'] # Encounter 8 (some sub-Alfvenic)
-#trange = ['2021-08-09/12:00', '2021-08-10/00:00'] # Encounter 9 (some sub-Alfvenic)
+#trange = ['2021-04-28/00:00', '2021-04-30/00:00'] # Encounter 8 (some sub-Alfvenic)
+trange = ['2021-08-09/12:00', '2021-08-10/00:00'] # Encounter 9 (some sub-Alfvenic)
 #trange = ['2022-02-25', '2022-02-28'] #Dudok de wit 2020 Full interval
 
 # trange = ['2018-11-05/00:00', '2018-11-05/03:00'] # Bale 2019 event (includes Sr)
-trange = ['2021-08-11/09:00', '2021-08-12/09:00'] # Soni 2024 Parker interval
+#trange = ['2021-08-11/09:00', '2021-08-12/09:00'] # Soni 2024 Parker interval
 #trange = ['2024-09-30/00:00', '2024-09-30/23:59'] # E21
 # trange = ['2024-12-24/00:00', '2024-12-25/00:00'] # E22
 # trange = ['2025-03-22/00:00', '2025-03-23/00:00'] # E23
@@ -256,8 +256,7 @@ for i in range(len(Bvecs)):
 
 #%%
 # Get minute averaged quantities.  meaninterval = 1 min ##
-minutes = 1
-
+minutes = 10
 Bvecs_mean = get_vecmean(Bvecs,minutes*meaninterval)
 vivecs_mean = get_vecmean(vivecs,minutes*meaninterval)
 Bmag_mean = get_mean(B_mag,minutes*meaninterval)
@@ -267,24 +266,20 @@ va_mean = Bmag_mean/np.sqrt(mu0*mi*n_mean)
 ma_mean = vmag_mean/va_mean
 beta_mean = get_mean(beta[:,0], minutes*meaninterval)
 
-plt.plot(ma_mean)
+#plt.plot(ma_mean)
 
-#%%
-# Get deflection angle & related proxies
+
+# Get deflection angle from mean field
 angle = np.zeros_like(timeax)
 for i in range(len(timeax)): angle[i] = get_angle(Bvecs[i],Bvecs_mean[i])
 
-angle_reduced = filter_angle(angle,10,20)
-plt.plot(angle_reduced)
+plt.plot(angle)
+plt.axhline(y=90,color='k',linestyle='--')
 plt.ylim(0,180)
+#%%
+# Get deflection angle & related proxies
 
 #%%
-# Br_short = get_mean(Br,meaninterval)
-# Vr_short = get_mean(Vr,meaninterval)
-
-#deflection_param = Vr/Vr_mean 
-#plt.plot((Br_short - Br_mean)/Br_mean)
-#plt.plot((Vr_short - Vr_mean)/Vr_mean)
 plt.xlabel('Time')
 plt.ylabel('')
 plt.plot(ma_mean,label='Mach Number')
@@ -315,15 +310,9 @@ store_data('Kr_norm', data = {'x':timeax,'y':K[:,0]/(P_th)})
 store_data('E_conv', data = {'x':timeax,'y':E_conv})
 #---------------------------------------------------------------------------------------
 
-
-
 # ------Angles---------------------------------
-#store_data('theta', data = {'x':timeax,'y':theta})
-#store_data('theta_v', data = {'x':timeax,'y':theta_v})
-#store_data('deflection', data = {'x':timeax,'y':deflection_param})
+store_data('angle', data = {'x':timeax,'y':angle})
 #----------------------------------------------
-
-
 
 # ----Pressures&Temps-------------------------------
 store_data('Pt', data = {'x':timeax,'y':P_th})
@@ -335,28 +324,13 @@ store_data('parperps', data = {'x':timeax,'y':parperps})
 
 #---------------------------------------------
 
-
-
-## -----Various Dimensionless Parameters -------
+## -----Various Parameters -------
 # Alfvenic Mach Number (Ma)
-store_data('Ma', data = {'x':timeax,'y':v_ratio})
+store_data('Ma', data = {'x':timeax,'y':ma_mean})
 
 # Plasma (proton) beta
-store_data('beta', data = {'x':timeax,'y':beta})
-
-# Br/|B|
-store_data('Br_norm', data = {'x':timeax,'y':Br_norm})
-
-# vr/|v|
-store_data('vr_norm', data = {'x':timeax,'y':vr_norm})
-
-
-
-store_data('vs_ratio', data = {'x':timeax,'y':vs/va})
-
+store_data('beta', data = {'x':timeax,'y':beta_mean})
 #-----------------------------------------------
-
-
 
 # ----Ion moments-----
 store_data('vi', data = {'x':timeax,'y':vivecs})
@@ -365,15 +339,11 @@ store_data('T', data = {'x':timeax,'y':Ti})
 #----------------------
 
 
-# Both Velocities on one plot
-store_data('viandva', data = {'x':timeax,'y':viandva})
-
-
 # %%
 # Construct Timeseries plots for eventual paper
 # Plot 1: 
 
-pyspedas.options('Ma', 'ytitle', 'Vp/Va')
+pyspedas.options('Ma', 'ytitle', 'Alfven Mach Number')
 pyspedas.options('Ma', 'ylog', 1)
 pyspedas.options('beta', 'ylog', 1)
 
@@ -384,35 +354,35 @@ pyspedas.ylim('theta',0,180)
 pyspedas.tsmooth('Ma',0) # creates a 'Ma-s' variable
 pyspedas.options('Ma', 'linestyle', ['-','--'])
 pyspedas.options('Ma', 'color', 'k')
-pyspedas.options('theta', 'linestyle', ['-','--'])
-pyspedas.options('theta', 'color', 'k')
-pyspedas.options('theta', 'ytitle', 'Deflection Angle (degrees)')
+pyspedas.options('angle', 'linestyle', ['-','--'])
+pyspedas.options('angle', 'color', 'k')
+pyspedas.options('angle', 'ytitle', 'Deflection Angle (degrees)')
 pyspedas.options('beta','ytitle','Plasma Beta')
 pyspedas.options('beta', 'linestyle', ['-','--'])
 pyspedas.options('beta', 'color', 'k')
 
-
-pyspedas.options('Br_norm','color', 'k')
-pyspedas.options('Br_norm','linestyle', ['-','--'])
-tplot(['theta', 'beta',])
+pyspedas.tplot(['angle','Ma'])
 
 # %%
 
 # Scatter Plot w/ colorbar
+
+angle_reduced = filter_angle(angle,0,180) #If you want all angles, do 0,180
+
 cm = plt.cm.get_cmap('seismic')
-sc=plt.scatter(ma_mean,theta[:,0],c=S[:,0],s=3,cmap=cm,vmin=-0.01,vmax=0.01)
+sc=plt.scatter(ma_mean,angle_reduced,c=S[:,0],s=3,cmap=cm)
 #sc=plt.scatter(ma_mean,Br_brmean,c=S[:,0],s=3,cmap=cm,vmin=-0.3,vmax=0.3)
 
-plt.colorbar(sc,label="sr")
+plt.colorbar(sc,label="Sr")
 plt.xlim(0,2)
 plt.ylim(0,180)
-
 
 plt.axhline(y=90,c='k')
 plt.axvline(x=1,c='k')
 plt.xlabel('Alfven Mach Number Ma')
 plt.ylabel('Deflection Angle')
 plt.show()
+
 
 
 
