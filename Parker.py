@@ -55,6 +55,25 @@ def filter_angle(angle,floor,ceiling):
 		if (angle[i] < floor or angle[i]>ceiling): angle_reduced[i] = np.nan
 	return angle_reduced
 
+def bin_angle(angle):
+	angle_binned = angle
+	for i in range(len(angle)):
+		if (angle[i]>=0 and angle[i]<=15): angle_binned[i] = 8
+		elif (angle[i]>=15 and angle[i]<30): angle_binned[i] = 23 
+		elif (angle[i]>=30 and angle[i]<45): angle_binned[i] = 38 
+		elif (angle[i]>=45 and angle[i]<60): angle_binned[i] = 53 
+		elif (angle[i]>=60 and angle[i]<75): angle_binned[i] = 68 
+		elif (angle[i]>=75 and angle[i]<90): angle_binned[i] = 83 
+		elif (angle[i]>=90 and angle[i]<105): angle_binned[i] = 98 
+		elif (angle[i]>=105 and angle[i]<120): angle_binned[i] = 113 
+		elif (angle[i]>=120 and angle[i]<135): angle_binned[i] = 128
+		elif (angle[i]>=135 and angle[i]<150): angle_binned[i] = 143 
+		elif (angle[i]>=150 and angle[i]<165): angle_binned[i] = 158 
+		elif (angle[i]>=165 and angle[i]<180): angle_binned[i] = 173
+		else: pass
+	return angle_binned
+
+
 # Velocities
 def get_va(B,n,m):
 	va = np.linalg.norm(B)/np.sqrt(mu0*n*m)
@@ -139,16 +158,20 @@ def get_vecmean(vec,int):   # Vector mean
 
 # trange = ['2024-10-29/00:00', '2024-10-31/00:00']
 # trange = ['2018-11-1', '2018-11-10'] #Dudok de wit 2020 Full interval
-#trange = ['2021-04-28/00:00', '2021-04-30/00:00'] # Encounter 8 (some sub-Alfvenic)
-trange = ['2021-08-09/12:00', '2021-08-10/00:00'] # Encounter 9 (some sub-Alfvenic)
+trange = ['2021-04-28/00:00', '2021-04-30/00:00'] # Encounter 8 (some sub-Alfvenic)
+#trange = ['2021-08-09/12:00', '2021-08-10/00:00'] # Encounter 9 (some sub-Alfvenic)
 #trange = ['2022-02-25', '2022-02-28'] #Dudok de wit 2020 Full interval
 
-# trange = ['2018-11-05/00:00', '2018-11-05/03:00'] # Bale 2019 event (includes Sr)
+#trange = ['2018-11-05/00:00', '2018-11-05/03:00'] # Bale 2019 event (includes Sr)
 #trange = ['2021-08-11/09:00', '2021-08-12/09:00'] # Soni 2024 Parker interval
-#trange = ['2024-09-30/00:00', '2024-09-30/23:59'] # E21
-# trange = ['2024-12-24/00:00', '2024-12-25/00:00'] # E22
+#trange = ['2024-09-30/00:00', '2024-09-30/23:59'] # E21 
+#trange = ['2024-12-24/00:00', '2024-12-25/00:00'] # E22 
 # trange = ['2025-03-22/00:00', '2025-03-23/00:00'] # E23
 # trange = ['2025-06-19/00:00', '2025-06-20/00:00'] # E24
+
+
+#Need to make a list of chosen Alfvenic & sub-alfvenic intervals
+#Most people choose a handful of intervals by eye
 
 Bfld_vars = pyspedas.projects.psp.fields(trange=trange, level='l2', time_clip=True)
 ACfld_vars = pyspedas.projects.psp.fields(trange=trange, datatype='dfb_ac_spec', level='l2',time_clip=True)
@@ -166,6 +189,10 @@ vxyz_name = 'psp_spi_VEL_INST'
 TiTensor_name = 'psp_spi_T_TENSOR_INST'
 Ti_name = 'psp_spi_TEMP'
 ni_name = 'psp_spi_DENS'
+
+def quickplot():
+	pyspedas.tplot([B_name,vi_name,Ti_name,ni_name])
+	return
 
 interpvar_name = vi_name
 timeax = pytplot.get_data(interpvar_name).times
@@ -266,8 +293,14 @@ va_mean = Bmag_mean/np.sqrt(mu0*mi*n_mean)
 ma_mean = vmag_mean/va_mean
 beta_mean = get_mean(beta[:,0], minutes*meaninterval)
 
-#plt.plot(ma_mean)
+S_alt = np.zeros_like(S)
+for i in range(len(Bvecs)):
+	E_conv[i] = -get_vxb(vivecs[i],Bvecs[i])
+	S_alt[i] = get_S(E_conv[i],Bvecs_mean[i])
 
+plt.plot(S[:,0])
+plt.plot(K[:,0])
+#%%
 
 # Get deflection angle from mean field
 angle = np.zeros_like(timeax)
@@ -342,7 +375,7 @@ store_data('T', data = {'x':timeax,'y':Ti})
 # %%
 # Construct Timeseries plots for eventual paper
 # Plot 1: 
-
+# def Machplot``
 pyspedas.options('Ma', 'ytitle', 'Alfven Mach Number')
 pyspedas.options('Ma', 'ylog', 1)
 pyspedas.options('beta', 'ylog', 1)
@@ -361,23 +394,27 @@ pyspedas.options('beta','ytitle','Plasma Beta')
 pyspedas.options('beta', 'linestyle', ['-','--'])
 pyspedas.options('beta', 'color', 'k')
 
-pyspedas.tplot(['angle','Ma'])
+pyspedas.tplot(['angle','Ma','beta'])
 
 # %%
 
 # Scatter Plot w/ colorbar
 
-angle_reduced = filter_angle(angle,0,180) #If you want all angles, do 0,180
-
+low = 20
+high = 180
+angle_reduced = filter_angle(angle,low,high) #If you want all angles, do 0,180
+#angle_reduced = bin_angle(angle)
 cm = plt.cm.get_cmap('seismic')
-sc=plt.scatter(ma_mean,angle_reduced,c=S[:,0],s=3,cmap=cm)
+sc=plt.scatter(ma_mean,angle_reduced,c=abs(beta[:,0]),s=1,cmap=cm,vmin=0,vmax=2)
 #sc=plt.scatter(ma_mean,Br_brmean,c=S[:,0],s=3,cmap=cm,vmin=-0.3,vmax=0.3)
 
-plt.colorbar(sc,label="Sr")
+plt.colorbar(sc,label="beta")
 plt.xlim(0,2)
-plt.ylim(0,180)
+plt.ylim(-10,180)
+
 
 plt.axhline(y=90,c='k')
+plt.axhline(y=low,c='b',linestyle='dashed',linewidth=0.3)
 plt.axvline(x=1,c='k')
 plt.xlabel('Alfven Mach Number Ma')
 plt.ylabel('Deflection Angle')
@@ -388,6 +425,14 @@ plt.show()
 
 # %%
 
+# #work in progress
+# def save_var(var):
+# 	np.save(str(var)+'.npy',var)
+# 	return
+
+# def load_var(var):
+# 	a = np.load(str(var)+'.npy')
+# 	return	
 
 # %%
 # %%
