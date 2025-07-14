@@ -115,9 +115,6 @@ def get_angle(vec,meanvec):
 	term4 = np.arccos(term3)*180/np.pi
 	return term4
 
-
-
-# NEED TESTING.  Having pyspedas path issues...##
 def get_parperps(n,T,B):  #B ant T tensor coord systems need to match for this
 	trace = T[0] + T[1] + T[2]
 	term1 = (T[0]*B[0]**2 + T[1]*B[1]**2 + T[2]*B[2]**2)/(np.linalg.norm(B)**2)
@@ -152,7 +149,6 @@ def get_S(E,B):
 	return S
 
 
-
 def get_mean(var,int):   #Take a timeseries and compute the mean (basically smooth outsmall flucs over some interval)
 	box = np.ones(int)/int
 	smoothed_var = np.convolve(var,box,mode='same')
@@ -165,21 +161,21 @@ def get_vecmean(vec,int):   # Vector mean
 	vec_mean = np.zeros_like(vec)
 	for i in range(len(vec_mean)): vec_mean[i] = np.array([vec1_mean[i],vec2_mean[i],vec3_mean[i]])
 	return vec_mean
+
+
+def get_delta(vec,vec_mean):
+	dvec = vec - vec_mean
+	dvec_norm = dvec/np.linalg.norm(vec)
+	return dvec,dvec_norm
+
+
 # %%
 # Get Mag Data
 # Encounters below 0.05 AU
-
-
-
 # Encounters below 0.08 AU 
-
-
 # Encounters below 0.05 AU
 # Encounters below 0.06 AU
 # Encounters below 0.07 AU
-
-
-
 # trange = ['2024-10-29/00:00', '2024-10-31/00:00']
 #trange = ['2018-11-1', '2018-11-10'] #Dudok de wit 2020 Full interval
 #trange = ['2021-04-28/00:00', '2021-04-30/00:00'] # Encounter 8 (some sub-Alfvenic)
@@ -187,15 +183,31 @@ def get_vecmean(vec,int):   # Vector mean
 #trange = ['2021-08-09/20:00', '2021-08-10/05:00'] # Encounter 9 (some sub-Alfvenic)
 #trange = ['2022-02-25', '2022-02-28'] #Dudok de wit 2020 Full interval
 
-#trange = ['2018-11-05/00:00', '2018-11-05/03:00'] # Bale 2019 event (includes Sr)
 #
 
-trange = ['2023-06-16/23:39','2023-06-27/07:52']
-
+sub_alfs =  [['2024-09-30/03:00','2024-09-30/11:00'],
+			 ['2021-08-09/21:30','2021-08-10/00:00'],
+			 ['2021-11-21/21:00','2021-11-22/01:00'],
+			 ['2021-11-22/03:30','2021-11-22/10:00'],
+			 ['2022-02-25/20:00','2022-02-25/23:30'],
+			 ['2022-06-01/18:00','2022-06-02/08:00'],
+			 ['2022-09-06/06:00','2022-09-06/16:00'],
+			 ['2022-09-06/18:00','2022-09-07/12:00'],
+			 ['2022-12-11/00:00','2022-12-11/18:00'],
+			 ['2023-03-16/12:00','2023-03-17/06:00'],
+			 ]
+recent_encounters_below20Rs = []
+# trange = sub_alfs[3] 
 
 #trange = ['2021-08-11/09:00', '2021-08-12/09:00'] # Soni 2024 Parker interval
-#trange = ['2024-09-30/00:00', '2024-09-30/23:59'] # E21 
-#trange = ['2024-12-24/00:00', '2024-12-25/00:00'] # E22 
+trange = ['2024-09-29/00:00', '2024-10-01/12:00'] # E21 
+trange = ['2024-06-29/00:00', '2024-07-01/12:00'] # E20
+trange=['2024-03-29/00:00','2024-03-31/00:00']  # E19 
+trange=['2023-12-28/00:00','2023-12-30/00:00'] # E18
+
+
+trange = ['2018-11-05/00:00', '2018-11-05/03:00'] # Bale 2019 event (includes Sr)
+##trange = ['2024-12-24/00:00', '2024-12-25/00:00'] # E22 
 # trange = ['2025-03-22/00:00', '2025-03-23/00:00'] # E23
 # trange = ['2025-06-19/00:00', '2025-06-20/00:00'] # E24
 
@@ -204,17 +216,12 @@ trange = ['2023-06-16/23:39','2023-06-27/07:52']
 #Most people choose a handful of intervals by eye
 
 Bfld_vars = pyspedas.projects.psp.fields(trange=trange, level='l2', time_clip=True)
+spi_vars = pyspedas.projects.psp.spi(trange=trange,level='l3',time_clip=True)
+# spe_vars = pyspedas.projects.psp.spe(trange=trange,level='l2',time_clip=True)
+
 #voltages_vars = pyspedas.projects.psp.fields(trange=trange, datatype='dfb_wf_dvdc', level='l2',time_clip=True)
-
-#%%
-
 #On DC datatype: 'sqn_rfs_V1V2 has some kind of electron density & core temp, but looks weird
-#%%
-
-
 # spc_vars = pyspedas.projects.psp.spc(trange=trange, datatype='l2', level='l2')
-swp_vars = pyspedas.projects.psp.spi(trange=trange,level='l3',time_clip=True)
-
 #%%1G
 # Reform all data to simple arrays and convert to SI units 
 B_name = 'psp_fld_l2_mag_RTN'
@@ -224,7 +231,7 @@ vxyz_name = 'psp_spi_VEL_INST'
 TiTensor_name = 'psp_spi_T_TENSOR_INST'
 Ti_name = 'psp_spi_TEMP'
 ni_name = 'psp_spi_DENS'
-voltages_name = 'psp_fld_l2_dfb_wf_dVdc_sc'
+# voltages_name = 'psp_fld_l2_dfb_wf_dVdc_sc'
 position_name = 'psp_spi_SUN_DIST'
 
 interpvar_name = vi_name
@@ -238,9 +245,9 @@ tinterpol(vi_name,interpvar_name,newname='vi')
 tinterpol(Ti_name,interpvar_name,newname='Ti')
 tinterpol(ni_name,interpvar_name,newname='ni')
 tinterpol(TiTensor_name,interpvar_name,newname='TiTensor')
-tinterpol(voltages_name,interpvar_name,newname='voltages')
+# tinterpol(voltages_name,interpvar_name,newname='voltages')
 tinterpol(position_name,interpvar_name,newname='position')
-
+#%%
 Bvecs = 1e-9*reform(pytplot.get_data('B'))
 Bxyz = 1e-9*reform(pytplot.get_data('Bxyz'))
 vxyz = 1e3*reform(pytplot.get_data('vxyz'))
@@ -248,8 +255,8 @@ vivecs = 1e3*reform(pytplot.get_data('vi'))
 ni = 1e6*reform(pytplot.get_data('ni'))
 Ti = 1.602e-19*reform(pytplot.get_data('Ti'))
 TiTensor = 1.602e-19*reform(pytplot.get_data('TiTensor'))
-voltages = reform(get_data('voltages'))
-position = reform(get_data('position'))
+# voltages = reform(get_data('voltages'))
+position = reform(get_data('position'))/695700 #Solar radii
 
 # %%
 # Calculate B Magnitude & create Normalized Br/|B|
@@ -290,7 +297,7 @@ line = np.ones_like(ni)
 theta = np.zeros([len(timeax),2])
 theta_v = np.zeros([len(timeax),2])
 
-E_antennas = np.zeros_like(voltages)
+# E_antennas = np.zeros_like(voltages)
 
 for i in range(len(Bvecs)):
 	Br[i], Bt[i], Bn[i] = Bvecs[i,0], Bvecs[i,1], Bvecs[i,2]
@@ -299,7 +306,7 @@ for i in range(len(Bvecs)):
 	v_mag[i] = np.linalg.norm(vivecs[i,:])
 	
 	E_conv[i] = -get_vxb(vivecs[i],Bvecs[i])
-	E_antennas[i] = voltages[i]/3.5
+	# E_antennas[i] = voltages[i]/3.5
 	S[i] = get_S(E_conv[i],Bvecs[i])
 	K[i] = get_K(mi,ni[i],vivecs[i])
 
@@ -322,8 +329,9 @@ for i in range(len(Bvecs)):
 	theta_v[i] = [get_deflection(vivecs[i]),90]
 
 #%%
-# Get minute averaged quantities.  meaninterval = 1 min ##
-minutes = 1
+
+# Get averaged quantities.  meaninterval = 1 min ##
+minutes = 10
 Bvecs_mean = get_vecmean(Bvecs,minutes*meaninterval)
 vivecs_mean = get_vecmean(vivecs,minutes*meaninterval)
 Bmag_mean = get_mean(B_mag,minutes*meaninterval)
@@ -333,13 +341,21 @@ va_mean = Bmag_mean/np.sqrt(mu0*mi*n_mean)
 ma_mean = vmag_mean/va_mean
 beta_mean = get_mean(beta[:,0], minutes*meaninterval)
 
+# Get dB,dv, and v,B alignment variable (proxy for alfvenicity)
+dB,dB_norm = np.zeros_like(Bvecs),np.zeros_like(Bvecs)
+dv,dv_norm = np.zeros_like(vivecs),np.zeros_like(vivecs)
+vB_alignment = np.zeros_like(ni)
+dvdB_alignment = np.zeros_like(ni)
+for i in range(len(timeax)):
+	dB[i], dB_norm[i]= get_delta(Bvecs[i],Bvecs_mean[i])
+	dv[i], dv_norm[i]= get_delta(vivecs[i],vivecs_mean[i])
 
+	dvdB_alignment[i] = np.abs(np.dot(dB[i],dv[i]))/(np.linalg.norm(dB[i])*np.linalg.norm(dv[i]))
+	vB_alignment[i] = np.abs(np.dot(Bvecs[i],vivecs[i]))/(B_mag[i]*v_mag[i]) #this one seems most useful
 
-ma = np.zeros_like(theta)
-S_alt = np.zeros_like(S)
-for i in range(len(Bvecs)):
-	E_conv[i] = -get_vxb(vxyz[i],Bxyz[i])
-	ma[i] = [ma_mean[i],1]
+plt.plot(vB_alignment[0:100])
+plt.ylim(0,1.1)
+plt.axhline(y=1,linestyle='--',color='k',linewidth=1)
 #%%
 
 # Get deflection angle from mean field
@@ -399,10 +415,13 @@ store_data('parperps', data = {'x':timeax,'y':parperps})
 
 ## -----Various Parameters -------
 # Alfvenic Mach Number (Ma)
-store_data('Ma', data = {'x':timeax,'y':ma})
+store_data('Ma', data = {'x':timeax,'y':P_th/P_mag})
 
 # Plasma (proton) beta
-store_data('beta', data = {'x':timeax,'y':beta_mean})
+store_data('beta', data = {'x':timeax,'y':beta})
+
+# vB alignment (alfvenicity?)
+store_data('vB_alignment', data = {'x':timeax,'y':vB_alignment})
 #-----------------------------------------------
 
 # ----Ion moments-----
@@ -410,6 +429,8 @@ store_data('vi', data = {'x':timeax,'y':vivecs})
 store_data('n', data = {'x':timeax,'y':ni})
 store_data('T', data = {'x':timeax,'y':Ti})
 #----------------------
+
+
 
 
 # %%
@@ -437,39 +458,54 @@ pyspedas.options('beta', 'color', 'k')
 pyspedas.tplot(['angle','Ma',position_name])
 
 #%%
-pairs = get_voltagepairs()
+# # pairs = get_voltagepairs()
 
-plt.plot(pairs[:,1])
+# plt.plot(pairs[:,1])
 
-plt.ylim(-0.03,0.03)
+# plt.ylim(-0.03,0.03)
+# #%%
+
+
+# plt.plot(E_conv[:,1])
+
+# plt.ylim(-0.03,0.03)
+
+plt.plot(position)
 #%%
+angle = np.zeros_like(timeax)
+for i in range(len(timeax)): angle[i] = get_angle(Bvecs[i],Bvecs_mean[i])
+angle_reduced = filter_angle(angle,low,high) #If you want all angles, do 0,180
+cm = plt.cm.get_cmap('seismic')
+sc=plt.scatter(ma_mean,angle_reduced,s=5)
 
-
-plt.plot(E_conv[:,1])
-
-plt.ylim(-0.03,0.03)
-
+plt.xlim(0,2)
+plt.ylim(0,180)
+plt.axhline(y=90,c='k')
+plt.axhline(y=low,c='b',linestyle='dashed',linewidth=0.3)
+plt.axvline(x=1,c='k')
+plt.xlabel('Alfven Mach Number Ma')
+plt.ylabel('Deflection Angle')
+plt.show()
 #%%
 # Scatter Plot w/ colorbar
 
-low = 25
+low = 20
 high = 180
 
 angle = np.zeros_like(timeax)
 for i in range(len(timeax)): angle[i] = get_angle(Bvecs[i],Bvecs_mean[i])
 angle_reduced = filter_angle(angle,low,high) #If you want all angles, do 0,180
-#angle_reduced = bin_angle(angle)
 cm = plt.cm.get_cmap('seismic')
-sc=plt.scatter(ma_mean,angle,c=K[:,0],s=5,cmap=cm,vmin=-0.1,vmax=0.1)
+sc=plt.scatter(ma_mean,angle,c=S[:,0],s=5,cmap=cm,vmin=-0.1,vmax=0.1)
 #sc=plt.scatter(ma_mean,Br_brmean,c=S[:,0],s=3,cmap=cm,vmin=-0.3,vmax=0.3)
 
 plt.colorbar(sc,label="Radial Proton Energy Flux")
 plt.xlim(0,2)
-plt.ylim(-10,180)
+plt.ylim(0,180)
 
 
 plt.axhline(y=90,c='k')
-plt.axhline(y=low,c='b',linestyle='dashed',linewidth=0.3)
+# plt.axhline(y=low,c='b',linestyle='dashed',linewidth=0.3)
 plt.axvline(x=1,c='k')
 plt.xlabel('Alfven Mach Number Ma')
 plt.ylabel('Deflection Angle')
