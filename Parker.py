@@ -59,6 +59,13 @@ def filter_angle(angle,floor,ceiling):
 		if (angle[i] < floor or angle[i]>ceiling): angle_reduced[i] = np.nan
 	return angle_reduced
 
+def bin_swvel(vel):
+	vel_binned = vel
+	for i in range(len(timeax)):
+		if vel[i,0] <= 450e3: vel[i,0]=1
+		elif vel[i,0] > 450e3: vel[i,0]=2
+	return vel_binned
+
 def bin_angle(angle):
 	angle_binned = angle
 	for i in range(len(angle)):
@@ -126,6 +133,10 @@ def get_parperps(n,T,B):  #B ant T tensor coord systems need to match for this
 	return Tpar,Tperp,Ppar,Pperp
 
 
+def get_par(v1,v2):
+	par = np.dot(v1,v2)/np.linalg.norm(v2)
+	return par
+
 def get_voltagepairs():
 	l_eff = 3.5
 	pairxy = reform(get_data('psp_fld_l2_dfb_wf_dVdc_sc'))
@@ -177,8 +188,8 @@ def get_delta(vec,vec_mean):
 # Encounters below 0.06 AU
 # Encounters below 0.07 AU
 # trange = ['2024-10-29/00:00', '2024-10-31/00:00']
-#trange = ['2018-11-1', '2018-11-10'] #Dudok de wit 2020 Full interval
-#trange = ['2021-04-28/00:00', '2021-04-30/00:00'] # Encounter 8 (some sub-Alfvenic)
+#trange = ['2018-11-3/00:00', '2018-11-6/00:00'] #Dudok de wit 2020 Full interval
+# trange = ['2021-04-28/00:00', '2021-04-30/00:00'] # Encounter 8 (some sub-Alfvenic)
 #trange = ['2021-08-09/12:00', '2021-08-10/00:00'] # Encounter 9 (some sub-Alfvenic)
 #trange = ['2021-08-09/20:00', '2021-08-10/05:00'] # Encounter 9 (some sub-Alfvenic)
 #trange = ['2022-02-25', '2022-02-28'] #Dudok de wit 2020 Full interval
@@ -200,10 +211,10 @@ recent_encounters_below20Rs = []
 # trange = sub_alfs[3] 
 
 #trange = ['2021-08-11/09:00', '2021-08-12/09:00'] # Soni 2024 Parker interval
-trange = ['2024-09-29/00:00', '2024-10-01/12:00'] # E21 
-trange = ['2024-06-29/00:00', '2024-07-01/12:00'] # E20
-trange=['2024-03-29/00:00','2024-03-31/00:00']  # E19 
-trange=['2023-12-28/00:00','2023-12-30/00:00'] # E18
+# trange = ['2024-09-28/00:00', '2024-10-05/12:00'] # E21 
+# trange = ['2024-06-29/00:00', '2024-07-01/12:00'] # E20
+# trange=['2024-03-27/00:00','2024-04-02/00:00']  # E19 
+# trange=['2023-12-28/00:00','2023-12-30/00:00'] # E18
 
 
 trange = ['2018-11-05/00:00', '2018-11-05/03:00'] # Bale 2019 event (includes Sr)
@@ -259,6 +270,8 @@ TiTensor = 1.602e-19*reform(pytplot.get_data('TiTensor'))
 position = reform(get_data('position'))/695700 #Solar radii
 
 # %%
+
+
 # Calculate B Magnitude & create Normalized Br/|B|
 Br,Bt,Bn = np.zeros_like(Bvecs[:,0]),np.zeros_like(Bvecs[:,0]),np.zeros_like(Bvecs[:,0])
 vr,vt,vn = np.zeros_like(Bvecs[:,0]),np.zeros_like(Bvecs[:,0]),np.zeros_like(Bvecs[:,0])
@@ -329,7 +342,6 @@ for i in range(len(Bvecs)):
 	theta_v[i] = [get_deflection(vivecs[i]),90]
 
 #%%
-
 # Get averaged quantities.  meaninterval = 1 min ##
 minutes = 10
 Bvecs_mean = get_vecmean(Bvecs,minutes*meaninterval)
@@ -341,41 +353,48 @@ va_mean = Bmag_mean/np.sqrt(mu0*mi*n_mean)
 ma_mean = vmag_mean/va_mean
 beta_mean = get_mean(beta[:,0], minutes*meaninterval)
 
-# Get dB,dv, and v,B alignment variable (proxy for alfvenicity)
+
+# Get dB,dv + components, etc. and vB alignment variable (proxy for alfvenicity)
 dB,dB_norm = np.zeros_like(Bvecs),np.zeros_like(Bvecs)
 dv,dv_norm = np.zeros_like(vivecs),np.zeros_like(vivecs)
+dB_par,dB_perp = np.zeros_like(ni),np.zeros_like(ni)
+dv_par,dv_perp = np.zeros_like(ni),np.zeros_like(ni)
+B_par = np.zeros_like(ni)
+v_par = np.zeros_like(ni)
+dB_par_norm = np.zeros_like(ni)
+dB_perp_norm = np.zeros_like(ni)
+dv_par = np.zeros_like(ni)
+dv_par_norm = np.zeros_like(ni)
+dv_perp_norm = np.zeros_like(ni)
+dB_norm_mag,dv_norm_mag = np.zeros_like(ni),np.zeros_like(ni)
 vB_alignment = np.zeros_like(ni)
 dvdB_alignment = np.zeros_like(ni)
-for i in range(len(timeax)):
-	dB[i], dB_norm[i]= get_delta(Bvecs[i],Bvecs_mean[i])
-	dv[i], dv_norm[i]= get_delta(vivecs[i],vivecs_mean[i])
+angle = np.zeros_like(timeax)
 
+for i in range(len(timeax)):
 	dvdB_alignment[i] = np.abs(np.dot(dB[i],dv[i]))/(np.linalg.norm(dB[i])*np.linalg.norm(dv[i]))
 	vB_alignment[i] = np.abs(np.dot(Bvecs[i],vivecs[i]))/(B_mag[i]*v_mag[i]) #this one seems most useful
 
-plt.plot(vB_alignment[0:100])
-plt.ylim(0,1.1)
-plt.axhline(y=1,linestyle='--',color='k',linewidth=1)
-#%%
+	# Magnetic deflection angle
+	angle[i] = get_angle(Bvecs[i],Bvecs_mean[i])
 
-# Get deflection angle from mean field
-angle = np.zeros_like(timeax)
-for i in range(len(timeax)): angle[i] = get_angle(Bvecs[i],Bvecs_mean[i])
-
-plt.plot(angle)
-plt.axhline(y=90,color='k',linestyle='--')
-plt.ylim(0,180)
-#%%
-# Get deflection angle & related proxies
-
-#%%
-plt.xlabel('Time')
-plt.ylabel('')
-plt.plot(ma_mean,label='Mach Number')
-plt.plot(beta_mean,label='Pth/Pm')
-plt.axhline(y=1,color='k',linestyle = '--')
-plt.ylim(0,4)
-plt.legend()
+	# B,v components	
+	B_par[i] = get_par(Bvecs[i],Bvecs_mean[i]) # All par to mean B 
+	v_par[i] = get_par(vivecs[i],Bvecs_mean[i])
+	
+	# dB,dv & components
+	dB[i], dB_norm[i]= get_delta(Bvecs[i],Bvecs_mean[i])  # dB & dB/|B| (vectors)
+	dv[i], dv_norm[i]= get_delta(vivecs[i],vivecs_mean[i]) # dv & dv/|v| (vectors)
+	dB_norm_mag[i] = np.linalg.norm(dB_norm[i]) # |dB|/|B| (scalar)
+	dv_norm_mag[i] = np.linalg.norm(dv_norm[i]) # |dv|/|v| (scalar)
+	dB_par[i] = get_par(dB[i],Bvecs_mean[i])
+	dv_par[i] = get_par(dv[i],Bvecs_mean[i])
+	dB_perp[i] = np.sqrt(np.linalg.norm(dB[i])**2 - dB_par[i]**2)
+	dv_perp[i] = np.sqrt(np.linalg.norm(dv[i])**2 - dv_par[i]**2)
+	dB_par_norm[i] = dB_par[i]/B_mag[i]
+	dv_par_norm[i] = dv_par[i]/v_mag[i]
+	dB_perp_norm[i] = dB_perp[i]/B_mag[i]
+	dv_perp_norm[i] = dv_perp[i]/v_mag[i]
 
 # %%
 # Make Tplot variables
@@ -410,18 +429,25 @@ store_data('Ppar', data = {'x':timeax,'y':Ppar})
 store_data('Pperp', data = {'x':timeax,'y':Pperp})
 store_data('pressures', data = {'x':timeax,'y':pressures})
 store_data('parperps', data = {'x':timeax,'y':parperps})
-
 #---------------------------------------------
 
-## -----Various Parameters -------
+## -----Various Dimensionless Parameters -------
 # Alfvenic Mach Number (Ma)
-store_data('Ma', data = {'x':timeax,'y':P_th/P_mag})
+store_data('Ma', data = {'x':timeax,'y':ma_mean})
 
 # Plasma (proton) beta
 store_data('beta', data = {'x':timeax,'y':beta})
 
 # vB alignment (alfvenicity?)
 store_data('vB_alignment', data = {'x':timeax,'y':vB_alignment})
+
+# dBr/|B| & dvr/|v| 
+store_data('dBr_norm', data = {'x':timeax,'y':dB_norm[:,0]})
+store_data('dvr_norm', data = {'x':timeax,'y':dv_norm[:,0]})
+
+# dB/|B| & dv/|v| 
+store_data('dB_norm', data = {'x':timeax,'y':dB_norm})
+store_data('dv_norm', data = {'x':timeax,'y':dv_norm})
 #-----------------------------------------------
 
 # ----Ion moments-----
@@ -474,7 +500,7 @@ plt.plot(position)
 #%%
 angle = np.zeros_like(timeax)
 for i in range(len(timeax)): angle[i] = get_angle(Bvecs[i],Bvecs_mean[i])
-angle_reduced = filter_angle(angle,low,high) #If you want all angles, do 0,180
+angle_reduced = filter_angle(angle,0,180) #If you want all angles, do 0,180
 cm = plt.cm.get_cmap('seismic')
 sc=plt.scatter(ma_mean,angle_reduced,s=5)
 
@@ -487,19 +513,24 @@ plt.xlabel('Alfven Mach Number Ma')
 plt.ylabel('Deflection Angle')
 plt.show()
 #%%
+vel_binned = bin_swvel(vivecs)
+
+
+
+#%%
 # Scatter Plot w/ colorbar
 
-low = 20
+low = 5
 high = 180
 
 angle = np.zeros_like(timeax)
 for i in range(len(timeax)): angle[i] = get_angle(Bvecs[i],Bvecs_mean[i])
 angle_reduced = filter_angle(angle,low,high) #If you want all angles, do 0,180
 cm = plt.cm.get_cmap('seismic')
-sc=plt.scatter(ma_mean,angle,c=S[:,0],s=5,cmap=cm,vmin=-0.1,vmax=0.1)
+sc=plt.scatter(ma_mean,angle,c=beta[:,0],s=1,cmap=cm,vmin=0,vmax=2)
 #sc=plt.scatter(ma_mean,Br_brmean,c=S[:,0],s=3,cmap=cm,vmin=-0.3,vmax=0.3)
 
-plt.colorbar(sc,label="Radial Proton Energy Flux")
+plt.colorbar(sc,label="vB Alignment (1=aligned)")
 plt.xlim(0,2)
 plt.ylim(0,180)
 
