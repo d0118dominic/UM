@@ -191,22 +191,35 @@ def get_vecmean(vec,int):   # Vector mean
 #
 
 
-sub_alfs =  [['2024-09-30/03:00','2024-09-30/11:00'],
-			 ['2021-08-09/21:30','2021-08-10/00:00'],
-			 ['2021-11-21/21:00','2021-11-22/01:00'],
-			 ['2021-11-22/03:30','2021-11-22/10:00'],
-			 ['2022-02-25/20:00','2022-02-25/23:30'],
-			 ['2022-06-01/18:00','2022-06-02/08:00'],
-			 ['2022-09-06/06:00','2022-09-06/16:00'],
-			 ['2022-09-06/18:00','2022-09-07/12:00'],
-			 ['2022-12-11/00:00','2022-12-11/18:00'],
-			 ['2023-03-16/12:00','2023-03-17/06:00'],
+sub_alfs = 	[['2021-08-09/21:30','2021-08-10/00:00'], # Encounter 9
+			 ['2021-11-21/21:00','2021-11-22/01:00'], # Encounter 10
+			 ['2021-11-22/03:30','2021-11-22/10:00'], # Encounter 10
+			 ['2022-02-25/20:00','2022-02-25/23:30'], # Encounter 11
+			 ['2022-06-01/18:00','2022-06-02/08:00'], # Encounter 12
+			 ['2022-09-06/06:00','2022-09-06/16:00'], # Encounter 13
+			 ['2022-09-06/18:00','2022-09-07/12:00'], # Encounter 13
+			 ['2022-12-11/00:00','2022-12-11/18:00'], # Encounter 14
+			 ['2023-03-16/12:00','2023-03-17/06:00'], # Encounter 15
 			 ]
 
-# trange = sub_alfs[3] 
-# trange=['2021-08-09/21:30','2021-08-10/00:00'] 
 
-trange = ['2021-08-11/09:00', '2021-08-12/09:00'] # Soni 2024 Parker interval
+sup_alfs = 	[['2021-08-10/00:30','2021-08-10/06:00'], # Encounter 9
+			 ['2021-11-21/16:00','2021-11-21/21:00'], # Encounter 10
+			 ['2021-11-22/01:00','2021-11-22/02:30'], # Encounter 10
+			 ['2022-02-26/07:30','2022-02-26/08:30'], # Encounter 11
+			 ['2022-06-02/13:00','2022-06-02/20:00'], # Encounter 12
+			 ]
+
+#sub_alfs =  ['2024-09-30/03:00','2024-09-30/11:00']
+subs = sub_alfs[0:4]
+sups = sup_alfs[0:4]
+
+recent_perihelia = [['2024-09-29/00:00', '2024-10-01/12:00'], #E21
+					['2024-06-29/00:00', '2024-07-01/12:00'], #E20
+					['2024-03-29/00:00','2024-03-31/00:00'], #E19
+					['2023-12-28/00:00','2023-12-30/00:00']] #E18
+
+# trange = ['2021-08-11/09:00', '2021-08-12/09:00'] # Soni 2024 Parker interval
 # trange = ['2024-09-30/00:00', '2024-09-30/23:59'] # E21 
 #trange = ['2024-12-24/00:00', '2024-12-25/00:00'] # E22 
 # trange = ['2025-03-22/00:00', '2025-03-23/00:00'] # E23
@@ -216,7 +229,16 @@ trange = ['2021-08-11/09:00', '2021-08-12/09:00'] # Soni 2024 Parker interval
 #Most people choose a handful of intervals by eye
 
 
-eventlist = sub_alfs[1:6]
+# eventlist = subs
+
+# Alfven crossings (<2 hr)
+c1= ['2021-11-21/21:00','2021-11-21/22:00']
+c2= ['2021-08-10/00:15', '2021-08-10/00:45'] # Encounter 9 (some sub-Alfvenic)
+c3=['2023-12-29/01:30','2023-12-29/03:00'] # E18
+c4=['2024-03-29/22:00','2024-03-29/23:30']  # E19 
+c5= ['2024-06-29/11:00', '2024-06-29/13:00'] # E20
+eventlist=[c1,c2,c3,c4,c5]
+eventlist=sub_alfs
 
 allangles=np.array([])
 allpositions=np.array([])
@@ -224,10 +246,12 @@ allmachs=np.array([])
 allSr=np.array([])
 allKr=np.array([])
 allmachs=np.array([])
+allbetas=np.array([])
 
 
 for i in range(len(eventlist)):
 	trange=eventlist[i]
+	# trange=trange
 	Bfld_vars = pyspedas.projects.psp.fields(trange=trange, level='l2', time_clip=True)
 	swp_vars = pyspedas.projects.psp.spi(trange=trange,level='l3',time_clip=True)
 
@@ -259,7 +283,7 @@ for i in range(len(eventlist)):
 	tinterpol(TiTensor_name,interpvar_name,newname='TiTensor')
 	# tinterpol(voltages_name,interpvar_name,newname='voltages')
 	tinterpol(position_name,interpvar_name,newname='position')
-
+	
 	Bvecs = 1e-9*reform(pytplot.get_data('B'))
 	Bxyz = 1e-9*reform(pytplot.get_data('Bxyz'))
 	vxyz = 1e3*reform(pytplot.get_data('vxyz'))
@@ -268,10 +292,11 @@ for i in range(len(eventlist)):
 	Ti = 1.602e-19*reform(pytplot.get_data('Ti'))
 	TiTensor = 1.602e-19*reform(pytplot.get_data('TiTensor'))
 	# voltages = reform(get_data('voltages'))
-	position = reform(get_data('position'))
+	position = reform(get_data('position'))/695700 #Solar radii
+
+
 
 	# Calculate B Magnitude & create Normalized Br/|B|
-
 	Br,Bt,Bn = np.zeros_like(Bvecs[:,0]),np.zeros_like(Bvecs[:,0]),np.zeros_like(Bvecs[:,0])
 	vr,vt,vn = np.zeros_like(Bvecs[:,0]),np.zeros_like(Bvecs[:,0]),np.zeros_like(Bvecs[:,0])
 
@@ -299,11 +324,17 @@ for i in range(len(eventlist)):
 	Ppar = np.zeros_like(Br_norm)
 	Pperp = np.zeros_like(Br_norm)
 
-	beta = np.zeros([len(timeax)])
+	beta = np.zeros([len(timeax),2])
 	Br_norm = np.zeros([len(timeax),2])
+	viandva = np.zeros([len(timeax),2])
+	ma = np.zeros(len(timeax))
 	pressures = np.zeros([len(timeax),3])
 	parperps = np.zeros([len(timeax),2])
 	line = np.ones_like(ni)
+	theta = np.zeros([len(timeax),2])
+	theta_v = np.zeros([len(timeax),2])
+
+	# E_antennas = np.zeros_like(voltages)
 
 	for i in range(len(Bvecs)):
 		Br[i], Bt[i], Bn[i] = Bvecs[i,0], Bvecs[i,1], Bvecs[i,2]
@@ -312,25 +343,30 @@ for i in range(len(eventlist)):
 		v_mag[i] = np.linalg.norm(vivecs[i,:])
 		
 		E_conv[i] = -get_vxb(vivecs[i],Bvecs[i])
+		# E_antennas[i] = voltages[i]/3.5
 		S[i] = get_S(E_conv[i],Bvecs[i])
 		K[i] = get_K(mi,ni[i],vivecs[i])
 
 		Tpar[i],Tperp[i],Ppar[i],Pperp[i] = get_parperps(ni[i],TiTensor[i],Bxyz[i])
 		
 		ExB[i] = get_vxb(E_conv[i],Bvecs[i]) # Will probably need to revisit under better assumptions
-		Br_norm[i] = get_brnorm(Bvecs[i])
+		Br_norm[i] = [get_brnorm(Bvecs[i]),0]
 		vr_norm[i] = get_brnorm(vivecs[i])
 		P_mag[i] = get_pm(Bvecs[i])
 		P_th[i] = get_pth(ni[i],Ti[i])
 		va[i] = get_va(Bvecs[i],ni[i],mi)
 		vs[i] = get_vs(Ti[i],mi)
 		vth[i]  = get_vth(Ti[i],mi)
-		beta[i] = P_th[i]/P_mag[i]
+		ma[i] = v_mag[i]/va[i]
+		beta[i] = [P_th[i]/P_mag[i],1]
+		viandva[i] = [np.linalg.norm(vivecs[i]),va[i]]
 		pressures[i] = [P_mag[i] + P_th[i],P_mag[i],P_th[i]]
 		parperps[i] = [Ppar[i], Pperp[i]]
 
-	# Get minute averaged quantities.  meaninterval = 1 min ##
+
+	# Get averaged quantities.  meaninterval = 1 min ##
 	minutes = 10
+
 	Bvecs_mean = get_vecmean(Bvecs,minutes*meaninterval)
 	vivecs_mean = get_vecmean(vivecs,minutes*meaninterval)
 	Bmag_mean = get_mean(B_mag,minutes*meaninterval)
@@ -338,26 +374,126 @@ for i in range(len(eventlist)):
 	n_mean = get_mean(ni,minutes*meaninterval)
 	va_mean = Bmag_mean/np.sqrt(mu0*mi*n_mean)
 	ma_mean = vmag_mean/va_mean
-	beta_mean = get_mean(beta, minutes*meaninterval)
+	beta_mean = get_mean(beta[:,0], minutes*meaninterval)
+
+	# Get dB,dv + components, etc. and vB alignment variable (proxy for alfvenicity)
+	dB,dB_norm = np.zeros_like(Bvecs),np.zeros_like(Bvecs)
+	dv,dv_norm = np.zeros_like(vivecs),np.zeros_like(vivecs)
+	dB_par,dB_perp = np.zeros_like(ni),np.zeros_like(ni)
+	dv_par,dv_perp = np.zeros_like(ni),np.zeros_like(ni)
+	B_par = np.zeros_like(ni)
+	v_par = np.zeros_like(ni)
+	dB_par_norm = np.zeros_like(ni)
+	dB_perp_norm = np.zeros_like(ni)
+	dv_par = np.zeros_like(ni)
+	dv_par_norm = np.zeros_like(ni)
+	dv_perp_norm = np.zeros_like(ni)
+	dB_norm_mag,dv_norm_mag = np.zeros_like(ni),np.zeros_like(ni)
+	vB_alignment = np.zeros_like(ni)
+	dvdB_alignment = np.zeros_like(ni)
+	angle = np.zeros_like(ni)
+
+	for i in range(len(timeax)):
+		dvdB_alignment[i] = np.abs(np.dot(dB[i],dv[i]))/(np.linalg.norm(dB[i])*np.linalg.norm(dv[i]))
+		vB_alignment[i] = np.abs(np.dot(Bvecs[i],vivecs[i]))/(B_mag[i]*v_mag[i]) #this one seems most useful
+
+		# Magnetic deflection angle
+		angle[i] = get_angle(Bvecs[i],Bvecs_mean[i])
+
+		# B,v components	
+		B_par[i] = get_par(Bvecs[i],Bvecs_mean[i]) # All par to mean B 
+		v_par[i] = get_par(vivecs[i],Bvecs_mean[i])
+		
+		# dB,dv & components
+		dB[i], dB_norm[i]= get_delta(Bvecs[i],Bvecs_mean[i])  # dB & dB/|B| (vectors)
+		dv[i], dv_norm[i]= get_delta(vivecs[i],vivecs_mean[i]) # dv & dv/|v| (vectors)
+		dB_norm_mag[i] = np.linalg.norm(dB_norm[i]) # |dB|/|B| (scalar)
+		dv_norm_mag[i] = np.linalg.norm(dv_norm[i]) # |dv|/|v| (scalar)
+		dB_par[i] = get_par(dB[i],Bvecs_mean[i])
+		dv_par[i] = get_par(dv[i],Bvecs_mean[i])
+		dB_perp[i] = np.sqrt(np.linalg.norm(dB[i])**2 - dB_par[i]**2)
+		dv_perp[i] = np.sqrt(np.linalg.norm(dv[i])**2 - dv_par[i]**2)
+		dB_par_norm[i] = dB_par[i]/Bmag_mean[i]
+		dv_par_norm[i] = dv_par[i]/vmag_mean[i]
+		dB_perp_norm[i] = dB_perp[i]/Bmag_mean[i]
+		dv_perp_norm[i] = dv_perp[i]/vmag_mean[i]
 
 
-	low = 10
+	low = 20
 	high = 180
-	angle = np.zeros_like(timeax)
+	angle_reduced = np.zeros_like(angle)
 	for i in range(len(timeax)): angle[i] = get_angle(Bvecs[i],Bvecs_mean[i])
 	angle_reduced = filter_angle(angle,low,high) #If you want all angles, do 0,180
-
 
 	allangles = np.concat([allangles,angle_reduced])
 	allmachs = np.concat([allmachs,ma_mean])
 	allpositions = np.concat([allpositions,position])
 	allSr = np.concat([allSr,S[:,0]])
 	allKr = np.concat([allKr,K[:,0]])
+	allbetas = np.concat([allbetas,beta_mean])
 	
 
+# %%
 plt.plot(allpositions)
 # %%
 
-plt.plot(allpositions)
-plt.ylim(0.8e7,1.4e7)
+bins=30
+fig,ax = plt.subplots(1,2,figsize=(10,5))
+ax[0].hist(np.log10(allmachs),bins=50)
+ax[0].set_xlim(-1.5,2)
+ax[0].set_xlabel('Log10(Ma)')
+ax[0].set_ylabel('Counts')
+ax[1].hist(allangles,bins=bins)
+ax[1].set_xlim(0,180)
+ax[1].set_xlabel('Deflection Angle (degrees)')
+ax[1].set_ylabel('Counts')
+#%%
+
+plt.scatter(np.log10(allmachs),allangles,s=3)
+plt.xlabel('Log10(Ma)')
+plt.axhline(y=90,color='k')
+plt.axvline(x=0,color='k')
+plt.xlim(-1,1)
+#%%
+
+fig, ax = plt.subplots(1,1,figsize=(8,8))
+ax.hist2d(np.log10(ma_mean),angle,range=[[-2,2],[0,180]],bins=60,cmap='viridis',facecolor='w')
+ax.set_xlabel('Log10 Alfven Mach Number')
+ax.set_ylabel('Deflection Angle (degrees)')
+ax.set_facecolor('k')
+ax.axhline(y=90,color='w')
+ax.axvline(x=0,color='w')
+ax.set_xlim(-0.5,0.5)
+
+
+#%%
+# cm = plt.cm.get_cmap('seismic')
+# sc=plt.scatter(allmachs,allangles,s=1)
+cm = plt.cm.get_cmap('seismic')
+sc=plt.scatter(allmachs,allangles,c=allbetas,s=1,cmap=cm,vmin=0,vmax=2)
+
+plt.colorbar(sc,label="beta")
+plt.xscale('log')
+plt.xlim(0.1,10)
+plt.ylim(0,180)
+plt.axhline(y=90,c='k')
+# plt.axhline(y=low,c='b',linestyle='dashed',linewidth=0.3)
+plt.axvline(x=1,c='k')
+plt.xlabel('Alfven Mach Number Ma')
+plt.ylabel('Deflection Angle')
+plt.show()
+# %%
+
+cm = plt.cm.get_cmap('seismic')
+sc=plt.scatter(allpositions,allangles,s=1)
+
+
+plt.ylim(0,180)
+plt.xlim(9,20)
+plt.axhline(y=90,c='k')
+plt.axhline(y=low,c='b',linestyle='dashed',linewidth=0.3)
+plt.axvline(x=1,c='k')
+plt.xlabel('Position')
+plt.ylabel('Deflection Angle')
+plt.show()
 # %%
