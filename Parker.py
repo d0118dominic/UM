@@ -67,7 +67,7 @@ def presplot():
 def angleplot():
 	mach = np.zeros([len(timeax),2])
 	for i in range(len(timeax)):
-		mach[i] = [ma[i],1]
+		mach[i] = [ma_mean[i],1]
 	store_data('Mach', data = {'x':timeax,'y':mach})
 	pyspedas.options('Mach', 'ytitle', 'Alfven Mach Number')
 	pyspedas.options('Mach', 'ylog', 1)
@@ -290,31 +290,47 @@ def store_alldata():
 #trange = ['2018-11-3/00:00', '2018-11-6/00:00'] #Dudok de wit 2020 Full interval
 #trange = ['2021-04-28/00:00', '2021-04-30/00:00'] # Encounter 8 (some sub-Alfvenic)
 #trange = ['2021-08-09/12:00', '2021-08-10/00:00'] # Encounter 9 (some sub-Alfvenic)
-trange = ['2021-08-09/20:00', '2021-08-10/05:00'] # Encounter 9 (some sub-Alfvenic)
+# trange = ['2021-08-09/20:00', '2021-08-10/05:00'] # Encounter 9 (some sub-Alfvenic)
 #trange = ['2022-02-25', '2022-02-28'] #Dudok de wit 2020 Full interval
 
 #
 
-sub_alfs = 	[['2021-08-09/21:30','2021-08-10/00:00'], # 2.5 hrs Encounter 9
-			 ['2021-11-21/21:00','2021-11-22/01:00'], # 4 hrs Encounter 10
-			 ['2021-11-22/03:30','2021-11-22/10:00'], # 6.5 hrs Encounter 10
-			 ['2022-02-25/20:00','2022-02-25/23:30'], # 3.5 hrs Encounter 11
-			 ['2022-06-01/18:00','2022-06-02/08:00'], # 14 hrs Encounter 12 
-			 ['2022-09-06/06:00','2022-09-06/16:00'], # 10 hrs Encounter 13
+# sub_alfs = 	[['2021-08-09/21:30','2021-08-10/00:00'], # 2.5 hrs Encounter 9   
+# 			 ['2021-11-21/21:00','2021-11-22/01:00'], # 4 hrs Encounter 10    
+# 			 ['2021-11-22/03:30','2021-11-22/10:00'], # 6.5 hrs Encounter 10  
+# 			 ['2022-02-25/20:00','2022-02-25/23:30'], # 3.5 hrs Encounter 11  
+# 			 ['2022-06-01/18:00','2022-06-02/08:00'], # 14 hrs Encounter 12 
+
+# sup_alfs = 	[['2021-08-10/00:30','2021-08-10/06:00'], # 5.5 hrs Encounter 9
+# 			 ['2021-11-21/16:00','2021-11-21/21:00'], # 5 hrs Encounter 10
+# 			 ['2021-11-22/01:00','2021-11-22/02:30'], # 1.5 hrs Encounter 10
+# 			 ['2022-02-26/07:30','2022-02-26/08:30'], # 1 hr Encounter 11
+# 			 ['2022-06-02/13:00','2022-06-02/20:00'], # 7 hrs Encounter 12
+
+
+
+sub_alfs =  [['2022-09-06/06:00','2022-09-06/16:00'], # 10 hrs Encounter 13
 			 ['2022-09-06/18:00','2022-09-07/12:00'], # 18 hrs Encounter 13
 			 ['2022-12-11/00:00','2022-12-11/18:00'], # 18 hrs Encounter 14
 			 ['2023-03-16/12:00','2023-03-17/06:00'], # 18 hrs Encounter 15
+			 ['2023-06-20/01:00','2023-06-21/01:00'], # 24 hrs Encounter 16
+			 ['2023-09-27/06:00','2023-09-27/15:00'], # 9 hrs Encounter 17
+			 ['2023-12-29/04:00','2023-12-29/14:00'], # 10 hrs Encounter 18
+			 ['2024-03-29/06:00','2024-03-29/21:00'], # 15 hrs Encounter 19
 			 ]
 
 
-sup_alfs = 	[['2021-08-10/00:30','2021-08-10/06:00'], # 5.5 hrs Encounter 9
-			 ['2021-11-21/16:00','2021-11-21/21:00'], # 5 hrs Encounter 10
-			 ['2021-11-22/01:00','2021-11-22/02:30'], # 1.5 hrs Encounter 10
-			 ['2022-02-26/07:30','2022-02-26/08:30'], # 1 hr Encounter 11
-			 ['2022-06-02/13:00','2022-06-02/20:00'], # 7 hrs Encounter 12
-			 ['2022-09-07/18:00','2022-09-08/18:00'], # 24 hrs Encounter 13
-			 ['2022-12-11/01:00','2022-12-10/09:00'], # 8 hrs Encounter 14
+sup_alfs=	[['2022-09-07/18:00','2022-09-08/18:00'], # 24 hrs Encounter 13
+			 ['2022-12-10/01:00','2022-12-10/09:00'], # 8 hrs Encounter 14
+			 ['2023-03-16/00:00','2023-03-16/11:00'], # 11 hrs Encounter 15
+			 ['2023-06-24/00:00','2023-06-25/00:00'], # 24  hrs Encounter 16
+			 ['2023-09-30/00:00','2023-09-30/09:00'], # 9 hrs Encounter 17
+			 ['2023-12-25/14:00','2023-12-25/23:00'], # 9 hrs Encounter 18
+			 ['2024-04-01/10:00','2024-04-02/01:00'], # 15 hrs Encounter 19
 			 ]
+
+
+near_alfs = []
 
 #sub_alfs =  ['2024-09-30/03:00','2024-09-30/11:00']
 trange=sup_alfs[6]
@@ -528,12 +544,13 @@ machplot()
 quickplot()
 #%%
 
-bins=100
+bins=30
 fig,ax = plt.subplots(1,2,figsize=(10,5))
 ax[0].hist(np.log10(ma_mean),bins=bins)
 ax[0].set_xlim(-1,1)
 ax[0].set_xlabel('Log10(Ma)')
 ax[0].set_ylabel('Counts')
+ax[0].axvline(x=0,color='k')
 ax[1].hist(angle,bins=bins)
 ax[1].set_xlim(0,180)
 ax[1].set_xlabel('Deflection Angle (degrees)')

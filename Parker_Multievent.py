@@ -21,7 +21,6 @@ kb = 1.380649e-23
 
 # Functions to get various useful parameters
 #%%
-
 def reform(var):
 	if not isinstance(var[1][0],np.ndarray):
 		newvar = np.zeros(len(var[0]))
@@ -32,11 +31,9 @@ def reform(var):
 	for i in range(len(var[0])-1):
 		newvar[i] = var[1][i]
 	return newvar
-
 def quickplot():
 	pyspedas.tplot([B_name,vi_name,Ti_name,ni_name])
 	return
-
 def duration(trange):
 	from datetime import datetime as dt
 	start = dt.strptime(trange[0], '%Y-%m-%d/%H:%M')
@@ -46,19 +43,16 @@ def duration(trange):
 	duration_m = duration_s/60 #minutes
 	duration_h = duration_m/60 #hours
 	return duration_m
-
 def mean_int(timeax,trange):
 	steps = len(timeax)
 	minutes = duration(trange)
 	mean = np.ceil(steps/minutes)
 	return int(mean)
-
 def filter_angle(angle,floor,ceiling):
 	angle_reduced = angle
 	for i in range(len(timeax)): 
 		if (angle[i] < floor or angle[i]>ceiling): angle_reduced[i] = np.nan
 	return angle_reduced
-
 def bin_angle(angle):
 	angle_binned = angle
 	for i in range(len(angle)):
@@ -76,8 +70,6 @@ def bin_angle(angle):
 		elif (angle[i]>=165 and angle[i]<180): angle_binned[i] = 173
 		else: pass
 	return angle_binned
-
-
 # Velocities
 def get_va(B,n,m):
 	va = np.linalg.norm(B)/np.sqrt(mu0*n*m)
@@ -97,26 +89,20 @@ def get_pm(B):
 def get_pth(n,T):
 	pth = gamma*n*T
 	return pth
-
 # Normalized Parameters
 def get_brnorm(B):
 	brnorm = B[0]/np.linalg.norm(B)
 	return brnorm
-
 def get_deflection(B):
 	brnorm = get_brnorm(B)
 	theta = np.arccos(brnorm)*180/np.pi
 	return theta
-
 def get_angle(vec,meanvec):
 	term1 = np.dot(vec,meanvec)
 	term2 = np.dot(np.linalg.norm(vec),np.linalg.norm(meanvec))
 	term3 = term1/term2
 	term4 = np.arccos(term3)*180/np.pi
 	return term4
-
-
-
 # NEED TESTING.  Having pyspedas path issues...##
 def get_parperps(n,T,B):  #B ant T tensor coord systems need to match for this
 	trace = T[0] + T[1] + T[2]
@@ -127,37 +113,29 @@ def get_parperps(n,T,B):  #B ant T tensor coord systems need to match for this
 	Ppar = n*kb*Tpar
 	Pperp = n*kb*Tperp
 	return Tpar,Tperp,Ppar,Pperp
-
-
+def get_par(v1,v2):
+	par = np.dot(v1,v2)/np.linalg.norm(v2)
+	return par
 def get_voltagepairs():
 	l_eff = 3.5
 	pairxy = reform(get_data('psp_fld_l2_dfb_wf_dVdc_sc'))
 	return pairxy/l_eff
-
-
 def get_vxb(v,B):
 	vxb = np.cross(v,B)
 	return vxb
-
 def get_K(m,n,v):
 	K = 0.5*m*n*v**3
 	return K
-
 def get_H(v,P):
 	H = 0.5*v*np.trace(P) + np.dot(v,P)
 	return H
-
 def get_S(E,B):
 	S = np.cross(E,B)/mu0
 	return S
-
-
-
 def get_mean(var,int):   #Take a timeseries and compute the mean (basically smooth outsmall flucs over some interval)
 	box = np.ones(int)/int
 	smoothed_var = np.convolve(var,box,mode='same')
 	return smoothed_var
-
 def get_vecmean(vec,int):   # Vector mean
 	vec1_mean = get_mean(vec[:,0],minutes*meaninterval)
 	vec2_mean = get_mean(vec[:,1],minutes*meaninterval)
@@ -191,28 +169,27 @@ def get_vecmean(vec,int):   # Vector mean
 #
 
 
-sub_alfs = 	[['2021-08-09/21:30','2021-08-10/00:00'], # Encounter 9
-			 ['2021-11-21/21:00','2021-11-22/01:00'], # Encounter 10
-			 ['2021-11-22/03:30','2021-11-22/10:00'], # Encounter 10
-			 ['2022-02-25/20:00','2022-02-25/23:30'], # Encounter 11
-			 ['2022-06-01/18:00','2022-06-02/08:00'], # Encounter 12
-			 ['2022-09-06/06:00','2022-09-06/16:00'], # Encounter 13
-			 ['2022-09-06/18:00','2022-09-07/12:00'], # Encounter 13
-			 ['2022-12-11/00:00','2022-12-11/18:00'], # Encounter 14
-			 ['2023-03-16/12:00','2023-03-17/06:00'], # Encounter 15
+sub_alfs =  [['2022-09-06/06:00','2022-09-06/16:00'], # 10 hrs Encounter 13
+			 ['2022-09-06/18:00','2022-09-07/12:00'], # 18 hrs Encounter 13
+			 ['2022-12-11/00:00','2022-12-11/18:00'], # 18 hrs Encounter 14
+			 ['2023-03-16/12:00','2023-03-17/06:00'], # 18 hrs Encounter 15
+			 ['2023-06-20/01:00','2023-06-21/01:00'], # 24 hrs Encounter 16
+			 ['2023-09-27/06:00','2023-09-27/15:00'], # 9 hrs Encounter 17
+			 ['2023-12-29/04:00','2023-12-29/14:00'], # 10 hrs Encounter 18
+			 ['2024-03-29/06:00','2024-03-29/21:00'], # 15 hrs Encounter 19
 			 ]
 
 
-sup_alfs = 	[['2021-08-10/00:30','2021-08-10/06:00'], # Encounter 9
-			 ['2021-11-21/16:00','2021-11-21/21:00'], # Encounter 10
-			 ['2021-11-22/01:00','2021-11-22/02:30'], # Encounter 10
-			 ['2022-02-26/07:30','2022-02-26/08:30'], # Encounter 11
-			 ['2022-06-02/13:00','2022-06-02/20:00'], # Encounter 12
+sup_alfs=	[['2022-09-07/18:00','2022-09-08/18:00'], # 24 hrs Encounter 13
+			 ['2022-12-10/01:00','2022-12-10/09:00'], # 8 hrs Encounter 14
+			 ['2023-03-16/00:00','2023-03-16/11:00'], # 11 hrs Encounter 15
+			 ['2023-06-24/00:00','2023-06-25/00:00'], # 24  hrs Encounter 16
+			 ['2023-09-30/00:00','2023-09-30/09:00'], # 9 hrs Encounter 17
+			 ['2023-12-25/14:00','2023-12-25/23:00'], # 9 hrs Encounter 18
+			 ['2024-04-01/10:00','2024-04-02/01:00'], # 15 hrs Encounter 19
 			 ]
 
 #sub_alfs =  ['2024-09-30/03:00','2024-09-30/11:00']
-subs = sub_alfs[0:4]
-sups = sup_alfs[0:4]
 
 recent_perihelia = [['2024-09-29/00:00', '2024-10-01/12:00'], #E21
 					['2024-06-29/00:00', '2024-07-01/12:00'], #E20
@@ -238,8 +215,11 @@ c3=['2023-12-29/01:30','2023-12-29/03:00'] # E18
 c4=['2024-03-29/22:00','2024-03-29/23:30']  # E19 
 c5= ['2024-06-29/11:00', '2024-06-29/13:00'] # E20
 eventlist=[c1,c2,c3,c4,c5]
-eventlist=sub_alfs
+eventlist=sup_alfs+sub_alfs
 
+
+
+#%%
 allangles=np.array([])
 allpositions=np.array([])
 allmachs=np.array([])
@@ -247,7 +227,12 @@ allSr=np.array([])
 allKr=np.array([])
 allmachs=np.array([])
 allbetas=np.array([])
-
+alldB = np.array([])
+alldv = np.array([])
+alldvpar = np.array([])
+alldvperp = np.array([])
+alldBpar = np.array([])
+alldBperp = np.array([])
 
 for i in range(len(eventlist)):
 	trange=eventlist[i]
@@ -419,8 +404,8 @@ for i in range(len(eventlist)):
 		dv_perp_norm[i] = dv_perp[i]/vmag_mean[i]
 
 
-	low = 20
-	high = 180
+	low = 45
+	high = 135
 	angle_reduced = np.zeros_like(angle)
 	for i in range(len(timeax)): angle[i] = get_angle(Bvecs[i],Bvecs_mean[i])
 	angle_reduced = filter_angle(angle,low,high) #If you want all angles, do 0,180
@@ -435,29 +420,41 @@ for i in range(len(eventlist)):
 
 # %%
 plt.plot(allpositions)
+# plt.plot(allangles)
 # %%
 
-bins=30
-fig,ax = plt.subplots(1,2,figsize=(10,5))
-ax[0].hist(np.log10(allmachs),bins=50)
-ax[0].set_xlim(-1.5,2)
+
+#%%
+bins=100
+fig,ax = plt.subplots(1,3,figsize=(18,6))
+ax[0].hist(np.log10(allmachs),bins=bins,range=[-1.5,1.5],log=False)
+ax[0].set_xlim(-1.5,1.5)
 ax[0].set_xlabel('Log10(Ma)')
 ax[0].set_ylabel('Counts')
-ax[1].hist(allangles,bins=bins)
-ax[1].set_xlim(0,180)
-ax[1].set_xlabel('Deflection Angle (degrees)')
+ax[0].axvline(x=0,color='k')
+ax[1].hist(allpositions,bins=bins,range=[0,50],log=False)
+ax[1].set_xlim(10,45)
+ax[1].set_xlabel('R (solar Radii)')
 ax[1].set_ylabel('Counts')
+
+ax[2].hist(allangles,bins=bins,range=[0,180],log=True)
+ax[2].set_xlim(0,180)
+ax[2].set_xlabel('Deflection Angle (degrees)')
+ax[2].set_ylabel('Counts')
+
+
 #%%
 
-plt.scatter(np.log10(allmachs),allangles,s=3)
+plt.scatter(np.log10(allmachs),allangles,s=1)
 plt.xlabel('Log10(Ma)')
+plt.ylabel('Deflection Angle (degrees)')
 plt.axhline(y=90,color='k')
 plt.axvline(x=0,color='k')
-plt.xlim(-1,1)
+plt.xlim(-0.8,0.8)
 #%%
 
 fig, ax = plt.subplots(1,1,figsize=(8,8))
-ax.hist2d(np.log10(ma_mean),angle,range=[[-2,2],[0,180]],bins=60,cmap='viridis',facecolor='w')
+ax.hist2d(np.log10(allmachs),allangles,range=[[-0.5,0.5],[0,180]],bins=10,cmin=1,cmap='viridis')
 ax.set_xlabel('Log10 Alfven Mach Number')
 ax.set_ylabel('Deflection Angle (degrees)')
 ax.set_facecolor('k')
