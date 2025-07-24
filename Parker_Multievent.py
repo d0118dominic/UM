@@ -11,6 +11,7 @@ me = 9.1094e-31 #kg
 mi = 1837*me
 mu0 = 1.2566370e-06  #;m kg / C^2
 eps0 = 8.85e-12   # C^2/Nm^2
+
 e = 1.602e-19 #C
 Z = 1 # 1 for H+, 2 for He2+
 gamma = 5/3
@@ -71,6 +72,12 @@ def bin_angle(angle):
 		else: pass
 	return angle_binned
 # Velocities
+
+def get_delta(vec,vec_mean):
+	dvec = vec - vec_mean
+	dvec_norm = dvec/np.linalg.norm(vec_mean)
+	return dvec,dvec_norm
+
 def get_va(B,n,m):
 	va = np.linalg.norm(B)/np.sqrt(mu0*n*m)
 	return va
@@ -143,6 +150,22 @@ def get_vecmean(vec,int):   # Vector mean
 	vec_mean = np.zeros_like(vec)
 	for i in range(len(vec_mean)): vec_mean[i] = np.array([vec1_mean[i],vec2_mean[i],vec3_mean[i]])
 	return vec_mean
+
+def get_crosshelicity(v,B,n,m): #vector v & B
+	z_plus = v + B/(n*m*mu0)
+	z_minus = v - B/(n*m*mu0)
+	term1 = np.linalg.norm(z_plus)**2 - np.linalg.norm(z_minus)**2
+	term2 = np.linalg.norm(z_plus)**2 + np.linalg.norm(z_minus)**2
+	sigma_c = term1/term2
+	return sigma_c
+
+#Somehow always = 1 (need to resolve)
+def get_residenergy(dv,dB): # vector dv & dB (Alfven units??)
+	term1 = np.linalg.norm(dv)**2 - np.linalg.norm(dB)**2
+	term2 = np.linalg.norm(dv)**2 + np.linalg.norm(dB)**2
+	sigma_r = term1/term2
+	return term1/term2
+
 # %%
 # Get Mag Data
 # Encounters below 0.05 AU
@@ -177,6 +200,8 @@ sub_alfs =  [['2022-09-06/06:00','2022-09-06/16:00'], # 10 hrs Encounter 13
 			 ['2023-09-27/06:00','2023-09-27/15:00'], # 9 hrs Encounter 17
 			 ['2023-12-29/04:00','2023-12-29/14:00'], # 10 hrs Encounter 18
 			 ['2024-03-29/06:00','2024-03-29/21:00'], # 15 hrs Encounter 19
+			 ['2024-06-30/03:00','2024-06-30/18:00'], # 15 hrs Encounter 20
+			 ['2024-09-28/11:00','2024-09-28/18:00'], # 7 hrs Encounter 21
 			 ]
 
 
@@ -187,6 +212,8 @@ sup_alfs=	[['2022-09-07/18:00','2022-09-08/18:00'], # 24 hrs Encounter 13
 			 ['2023-09-30/00:00','2023-09-30/09:00'], # 9 hrs Encounter 17
 			 ['2023-12-25/14:00','2023-12-25/23:00'], # 9 hrs Encounter 18
 			 ['2024-04-01/10:00','2024-04-02/01:00'], # 15 hrs Encounter 19
+			 ['2024-07-01/20:00','2024-07-03/00:00'], # 28 hrs Encounter 20
+			 ['2024-10-03/00:00','2024-10-03/12:00'], # 12 hrs Encounter 21
 			 ]
 
 #sub_alfs =  ['2024-09-30/03:00','2024-09-30/11:00']
@@ -209,17 +236,22 @@ recent_perihelia = [['2024-09-29/00:00', '2024-10-01/12:00'], #E21
 # eventlist = subs
 
 # Alfven crossings (<2 hr)
-c1= ['2021-11-21/21:00','2021-11-21/22:00']
-c2= ['2021-08-10/00:15', '2021-08-10/00:45'] # Encounter 9 (some sub-Alfvenic)
-c3=['2023-12-29/01:30','2023-12-29/03:00'] # E18
-c4=['2024-03-29/22:00','2024-03-29/23:30']  # E19 
-c5= ['2024-06-29/11:00', '2024-06-29/13:00'] # E20
-eventlist=[c1,c2,c3,c4,c5]
-eventlist=sup_alfs+sub_alfs
-
-
+short_crossings = [['2021-11-21/21:00','2021-11-21/22:00'],
+				   ['2021-08-10/00:15', '2021-08-10/00:45'], # Encounter 9 (some sub-Alfvenic)
+                   ['2023-12-29/01:30','2023-12-29/03:00'], # E18
+                   ['2024-03-29/22:00','2024-03-29/23:30'],  # E19 
+                   ['2024-06-29/11:00', '2024-06-29/13:00']] # E20
+# eventlist = sub_alfs + sup_alfs
+eventlist = sub_alfs+sup_alfs
 
 #%%
+
+allBmags = np.array([])
+allvmags = np.array([])
+allva = np.array([])
+alldB = np.array([])
+alldv = np.array([])
+
 allangles=np.array([])
 allpositions=np.array([])
 allmachs=np.array([])
@@ -229,10 +261,19 @@ allmachs=np.array([])
 allbetas=np.array([])
 alldB = np.array([])
 alldv = np.array([])
-alldvpar = np.array([])
-alldvperp = np.array([])
-alldBpar = np.array([])
-alldBperp = np.array([])
+alldv_par_norm = np.array([])
+alldv_perp_norm = np.array([])
+alldB_par_norm = np.array([])
+alldB_perp_norm = np.array([])
+alldB_norm_mag = np.array([])
+alldv_norm_mag = np.array([])
+allvbalignment = np.array([])
+allcrosshelicity = np.array([])
+
+
+
+
+
 
 for i in range(len(eventlist)):
 	trange=eventlist[i]
@@ -364,6 +405,8 @@ for i in range(len(eventlist)):
 	# Get dB,dv + components, etc. and vB alignment variable (proxy for alfvenicity)
 	dB,dB_norm = np.zeros_like(Bvecs),np.zeros_like(Bvecs)
 	dv,dv_norm = np.zeros_like(vivecs),np.zeros_like(vivecs)
+	dBmag = np.zeros_like(ni)
+	dvmag = np.zeros_like(ni)
 	dB_par,dB_perp = np.zeros_like(ni),np.zeros_like(ni)
 	dv_par,dv_perp = np.zeros_like(ni),np.zeros_like(ni)
 	B_par = np.zeros_like(ni)
@@ -377,6 +420,8 @@ for i in range(len(eventlist)):
 	vB_alignment = np.zeros_like(ni)
 	dvdB_alignment = np.zeros_like(ni)
 	angle = np.zeros_like(ni)
+	sigma_c = np.zeros_like(ni)
+	sigma_r = np.zeros_like(ni)
 
 	for i in range(len(timeax)):
 		dvdB_alignment[i] = np.abs(np.dot(dB[i],dv[i]))/(np.linalg.norm(dB[i])*np.linalg.norm(dv[i]))
@@ -385,13 +430,18 @@ for i in range(len(eventlist)):
 		# Magnetic deflection angle
 		angle[i] = get_angle(Bvecs[i],Bvecs_mean[i])
 
-		# B,v components	
+
 		B_par[i] = get_par(Bvecs[i],Bvecs_mean[i]) # All par to mean B 
 		v_par[i] = get_par(vivecs[i],Bvecs_mean[i])
+
+
+
 		
 		# dB,dv & components
 		dB[i], dB_norm[i]= get_delta(Bvecs[i],Bvecs_mean[i])  # dB & dB/|B| (vectors)
 		dv[i], dv_norm[i]= get_delta(vivecs[i],vivecs_mean[i]) # dv & dv/|v| (vectors)
+		dBmag[i] = np.linalg.norm(dB[i])
+		dvmag[i] = np.linalg.norm(dv[i])
 		dB_norm_mag[i] = np.linalg.norm(dB_norm[i]) # |dB|/|B| (scalar)
 		dv_norm_mag[i] = np.linalg.norm(dv_norm[i]) # |dv|/|v| (scalar)
 		dB_par[i] = get_par(dB[i],Bvecs_mean[i])
@@ -404,8 +454,15 @@ for i in range(len(eventlist)):
 		dv_perp_norm[i] = dv_perp[i]/vmag_mean[i]
 
 
-	low = 45
-	high = 135
+		sigma_r[i] = get_residenergy(dv[i],dB[i])
+		sigma_c[i] = get_crosshelicity(vivecs[i],Bvecs[i],ni[i],mi)
+
+
+
+
+
+	low =10
+	high = 180
 	angle_reduced = np.zeros_like(angle)
 	for i in range(len(timeax)): angle[i] = get_angle(Bvecs[i],Bvecs_mean[i])
 	angle_reduced = filter_angle(angle,low,high) #If you want all angles, do 0,180
@@ -416,14 +473,118 @@ for i in range(len(eventlist)):
 	allSr = np.concat([allSr,S[:,0]])
 	allKr = np.concat([allKr,K[:,0]])
 	allbetas = np.concat([allbetas,beta_mean])
+	alldBmag = np.concat([alldB,dBmag])
+	alldvmag = np.concat([alldv,dvmag])
+	alldB_norm_mag = np.concat([alldB_norm_mag,dB_norm_mag])
+	alldv_norm_mag = np.concat([alldv_norm_mag,dv_norm_mag])
+	alldB_par_norm = np.concat([alldB_par_norm,dB_par_norm])
+	alldv_par_norm = np.concat([alldv_par_norm,dv_par_norm])
+	alldB_perp_norm = np.concat([alldB_perp_norm,dB_perp_norm])
+	alldv_perp_norm = np.concat([alldv_perp_norm,dv_perp_norm])
+	allBmags = np.concat([allBmags,Bmag_mean])
+	allvmags = np.concat([allvmags,vmag_mean])
+	allva = np.concat([allva,va_mean])
+	allvbalignment = np.concat([allvbalignment,vB_alignment])
+	allcrosshelicity = np.concat([allcrosshelicity,sigma_c])
 	
 
+allvars = [allangles,allmachs,allpositions,
+           allSr,allKr,alldB_norm_mag,alldv_norm_mag,allBmags,allvmags]
 # %%
+#%% Need a better filtering function
+
+allmachs_sub = np.zeros_like(allmachs)
+allmachs_sup = np.zeros_like(allmachs)
+def filter_intervals():
+	for i in range(len(allmachs)):
+		if (allmachs[i] > 1):
+			allmachs_sup[i] = allmachs[i]
+		elif (allmachs[i] < 1):
+			allmachs_sub[i] = allmachs[i]
+	return
+
+
+filter_intervals()
+
+
+
+#%%
+
 plt.plot(allpositions)
 # plt.plot(allangles)
-# %%
+def filter_deltas(low):
+	for i in range(len(alldv_norm_mag)):
+		if (alldv_norm_mag[i] < low or alldB_norm_mag[i] < low):
+			alldv_norm_mag[i] = np.nan
+			alldB_norm_mag[i] = np.nan
+			allangles[i] = np.nan
+			allSr[i] = np.nan
+			allKr[i] = np.nan
+	return
+filter_deltas(0.2)
+
+#%%
+
+#%%
+
+fig,ax = plt.subplots(1,2,figsize=(10,5))
+ax[0].scatter(np.log10(allmachs),allSr,s=0.01)
+ax[1].scatter(np.log10(allmachs),allKr,s=0.01)
+ax[0].set_xlim(-0.5,0.5)
+ax[1].set_xlim(-0.5,0.5)
+ax[0].set_ylim(0,0.6)
+ax[1].set_ylim(0,0.6)
+# plt.axhline(y=0,color='k')
+ax[0].axvline(x=0,color='k')
+ax[1].axvline(x=0,color='k')
+
+ax[0].set_ylabel("Radial Poynting Flux")
+ax[1].set_ylabel("Radial Kinetic Energy Flux")
+ax[0].set_xlabel("Log10(Ma)")
+ax[1].set_xlabel("Log10(Ma)")
 
 
+
+#%%
+fig,ax = plt.subplots(1,2,figsize=(10,5))
+ax[0].scatter(np.log10(allmachs),alldB_norm_mag,s=0.01)
+ax[1].scatter(np.log10(allmachs),alldv_norm_mag,s=0.01)
+ax[0].set_xlim(-0.5,0.5)
+ax[1].set_xlim(-0.5,0.5)
+# ax[0].set_ylim(0,3)
+# ax[1].set_ylim(0,3)
+# plt.axhline(y=0,color='k')
+plt.axvline(x=0,color='k')
+ax[0].set_ylabel("|dv|/|v|")
+ax[1].set_ylabel("|dB|/|B|")
+ax[0].set_xlabel("Log10(Ma)")
+ax[1].set_xlabel("Log10(Ma)")
+
+
+#%%
+# Plot 1: Scatterplot - Ma vs theta
+
+plt.scatter(np.log10(allmachs),allangles,s=0.1)
+plt.xlim(-0.5,0.5)
+plt.ylim(15,160)
+plt.axhline(y=90,color='k')
+plt.axvline(x=0,color='k')
+plt.ylabel("Deflection Angle (degrees)")
+plt.xlabel("Log10(Ma)")
+
+
+
+
+
+#%%
+# Plot 2 
+
+
+range=[0,2]
+plt.hist(alldB_norm_mag,bins=40,range=range,log=True)
+plt.hist(abs(alldB_par_norm),bins=40,log=True,range=range,histtype="step")
+plt.hist(abs(alldB_perp_norm),bins=40,log=True,range=range,histtype="step")
+plt.ylim(0.1,1000000)
 #%%
 bins=100
 fig,ax = plt.subplots(1,3,figsize=(18,6))
@@ -445,23 +606,42 @@ ax[2].set_ylabel('Counts')
 
 #%%
 
-plt.scatter(np.log10(allmachs),allangles,s=1)
-plt.xlabel('Log10(Ma)')
+# plt.scatter(np.log10(allmachs),allangles,s=0.1)
+# plt.xlabel('Log10(Ma)')
+# plt.ylabel('Deflection Angle (degrees)')
+# plt.axhline(y=90,color='k')
+# plt.axvline(x=0,color='k')
+# plt.xlim(-0.5,0.5)
+
+
+plt.scatter(allpositions,allangles,s=0.1)
+plt.xlabel('R (Solar Radii)')
 plt.ylabel('Deflection Angle (degrees)')
 plt.axhline(y=90,color='k')
-plt.axvline(x=0,color='k')
-plt.xlim(-0.8,0.8)
+# plt.axvline(x=0,color='k')
+# plt.xlim(-0.5,0.5)
+
 #%%
 
 fig, ax = plt.subplots(1,1,figsize=(8,8))
-ax.hist2d(np.log10(allmachs),allangles,range=[[-0.5,0.5],[0,180]],bins=10,cmin=1,cmap='viridis')
+ax.hist2d(np.log10(allmachs),allSr,range=[[-0.5,0.5],[0,0.6]],bins=100,cmin=1,cmap='viridis')
 ax.set_xlabel('Log10 Alfven Mach Number')
-ax.set_ylabel('Deflection Angle (degrees)')
+ax.set_ylabel('Radial Poynting Flux (SI units W/m^2)')
 ax.set_facecolor('k')
 ax.axhline(y=90,color='w')
 ax.axvline(x=0,color='w')
 ax.set_xlim(-0.5,0.5)
+#%%
 
+
+fig, ax = plt.subplots(1,1,figsize=(8,8))
+ax.hist2d(np.log10(allmachs),allKr,range=[[-0.5,0.5],[0,0.6]],bins=100,cmin=1,cmap='viridis')
+ax.set_xlabel('Log10 Alfven Mach Number')
+ax.set_ylabel('Radial Kinetic Energy Flux (SI units W/m^2)')
+ax.set_facecolor('k')
+ax.axhline(y=90,color='w')
+ax.axvline(x=0,color='w')
+ax.set_xlim(-0.5,0.5)
 
 #%%
 # cm = plt.cm.get_cmap('seismic')
@@ -479,18 +659,6 @@ plt.axvline(x=1,c='k')
 plt.xlabel('Alfven Mach Number Ma')
 plt.ylabel('Deflection Angle')
 plt.show()
-# %%
-
-cm = plt.cm.get_cmap('seismic')
-sc=plt.scatter(allpositions,allangles,s=1)
 
 
-plt.ylim(0,180)
-plt.xlim(9,20)
-plt.axhline(y=90,c='k')
-plt.axhline(y=low,c='b',linestyle='dashed',linewidth=0.3)
-plt.axvline(x=1,c='k')
-plt.xlabel('Position')
-plt.ylabel('Deflection Angle')
-plt.show()
 # %%

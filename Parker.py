@@ -214,8 +214,24 @@ def get_vecmean(vec,int):   # Vector mean
 
 def get_delta(vec,vec_mean):
 	dvec = vec - vec_mean
-	dvec_norm = dvec/np.linalg.norm(vec)
+	dvec_norm = dvec/np.linalg.norm(vec_mean)
 	return dvec,dvec_norm
+
+def get_crosshelicity(v,B,n,m): #vector v & B
+	z_plus = v + B/(n*m*mu0)
+	z_minus = v - B/(n*m*mu0)
+	term1 = np.linalg.norm(z_plus)**2 - np.linalg.norm(z_minus)**2
+	term2 = np.linalg.norm(z_plus)**2 + np.linalg.norm(z_minus)**2
+	sigma_c = term1/term2
+	return sigma_c
+
+#Somehow always = 1 (need to resolve)
+def get_residenergy(dv,dB): # vector dv & dB (Alfven units??)
+	term1 = np.linalg.norm(dv)**2 - np.linalg.norm(dB)**2
+	term2 = np.linalg.norm(dv)**2 + np.linalg.norm(dB)**2
+	sigma_r = term1/term2
+	return term1/term2
+
 
 def store_alldata():
 	#--------------------------------------------------------------------------------------
@@ -317,6 +333,8 @@ sub_alfs =  [['2022-09-06/06:00','2022-09-06/16:00'], # 10 hrs Encounter 13
 			 ['2023-09-27/06:00','2023-09-27/15:00'], # 9 hrs Encounter 17
 			 ['2023-12-29/04:00','2023-12-29/14:00'], # 10 hrs Encounter 18
 			 ['2024-03-29/06:00','2024-03-29/21:00'], # 15 hrs Encounter 19
+			 ['2024-06-30/03:00','2024-06-30/18:00'], # 15 hrs Encounter 20
+			 ['2024-09-28/11:00','2024-09-28/18:00'], # 7 hrs Encounter 21
 			 ]
 
 
@@ -327,21 +345,25 @@ sup_alfs=	[['2022-09-07/18:00','2022-09-08/18:00'], # 24 hrs Encounter 13
 			 ['2023-09-30/00:00','2023-09-30/09:00'], # 9 hrs Encounter 17
 			 ['2023-12-25/14:00','2023-12-25/23:00'], # 9 hrs Encounter 18
 			 ['2024-04-01/10:00','2024-04-02/01:00'], # 15 hrs Encounter 19
+			 ['2024-07-01/20:00','2024-07-03/00:00'], # 28 hrs Encounter 20
+			 ['2024-10-03/00:00','2024-10-03/12:00'], # 12 hrs Encounter 21
 			 ]
 
 
-near_alfs = []
+near_alfs = [['2022-09-05/11:00','2022-09-05/17:00'], # 6 hrs Encounter 13
+			 ['2022-09-05/11:00','2022-09-05/17:00'],
+]
 
 #sub_alfs =  ['2024-09-30/03:00','2024-09-30/11:00']
-trange=sup_alfs[6]
-
+# trange=sub_alfs[]
+trange=['2023-06-18/00:00','2023-06-20/00:00']
 
 # Alfven crossings (<2 hr)
 #trange = ['2021-11-21/21:00','2021-11-21/22:00']
-#trange = ['2021-08-10/00:15', '2021-08-10/00:45'] # Encounter 9 (some sub-Alfvenic)
+# trange = ['2021-08-10/00:15', '2021-08-10/00:45'] # Encounter 9 (some sub-Alfvenic)
 # trange=['2023-12-29/01:30','2023-12-29/03:00'] # E18
 #trange=['2024-03-29/22:00','2024-03-29/23:30']  # E19 
-# trange = ['2024-06-29/11:00', '2024-06-29/13:00'] # E20
+#trange = ['2024-06-29/11:00', '2024-06-29/13:00'] # E20
 # trange = ['2024-09-28/00:00', '2024-10-05/12:00'] # E21 
 
 
@@ -504,8 +526,11 @@ dB_norm_mag,dv_norm_mag = np.zeros_like(ni),np.zeros_like(ni)
 vB_alignment = np.zeros_like(ni)
 dvdB_alignment = np.zeros_like(ni)
 angle = np.zeros_like(ni)
+sigma_c = np.zeros_like(ni)
+sigma_r = np.zeros_like(ni)
 
 for i in range(len(timeax)):
+	
 	dvdB_alignment[i] = np.abs(np.dot(dB[i],dv[i]))/(np.linalg.norm(dB[i])*np.linalg.norm(dv[i]))
 	vB_alignment[i] = np.abs(np.dot(Bvecs[i],vivecs[i]))/(B_mag[i]*v_mag[i]) #this one seems most useful
 
@@ -519,6 +544,10 @@ for i in range(len(timeax)):
 	# dB,dv & components
 	dB[i], dB_norm[i]= get_delta(Bvecs[i],Bvecs_mean[i])  # dB & dB/|B| (vectors)
 	dv[i], dv_norm[i]= get_delta(vivecs[i],vivecs_mean[i]) # dv & dv/|v| (vectors)
+	
+	sigma_r[i] = get_residenergy(dv[i],dB[i])
+	sigma_c[i] = get_crosshelicity(vivecs[i],Bvecs[i],ni[i],mi)
+	
 	dB_norm_mag[i] = np.linalg.norm(dB_norm[i]) # |dB|/|B| (scalar)
 	dv_norm_mag[i] = np.linalg.norm(dv_norm[i]) # |dv|/|v| (scalar)
 	dB_par[i] = get_par(dB[i],Bvecs_mean[i])
@@ -542,6 +571,7 @@ angle=angle_reduced
 store_alldata()
 machplot()
 quickplot()
+fluxplot()
 #%%
 
 bins=30
