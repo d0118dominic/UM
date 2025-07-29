@@ -6,6 +6,7 @@ import pytplot
 from pytplot import get_data, store_data,timespan
 from pyspedas import tplot
 from pyspedas import tinterpol
+from scipy.stats import binned_statistic_2d
 
 me = 9.1094e-31 #kg
 mi = 1837*me
@@ -77,6 +78,10 @@ def get_delta(vec,vec_mean):
 	dvec = vec - vec_mean
 	dvec_norm = dvec/np.linalg.norm(vec_mean)
 	return dvec,dvec_norm
+def get_deltascalar(var,var_mean):
+	dvar = var - var_mean
+	dvar_norm = dvar/var_mean
+	return dvar,dvar_norm
 
 def get_va(B,n,m):
 	va = np.linalg.norm(B)/np.sqrt(mu0*n*m)
@@ -168,29 +173,6 @@ def get_residenergy(dv,dB): # vector dv & dB (Alfven units??)
 
 # %%
 # Get Mag Data
-# Encounters below 0.05 AU
-
-
-
-# Encounters below 0.08 AU 
-
-
-# Encounters below 0.05 AU
-# Encounters below 0.06 AU
-# Encounters below 0.07 AU
-
-
-
-# trange = ['2024-10-29/00:00', '2024-10-31/00:00']
-#trange = ['2018-11-1', '2018-11-10'] #Dudok de wit 2020 Full interval
-#trange = ['2021-04-28/00:00', '2021-04-30/00:00'] # Encounter 8 (some sub-Alfvenic)
-#trange = ['2021-08-09/12:00', '2021-08-10/00:00'] # Encounter 9 (some sub-Alfvenic)
-#trange = ['2021-08-09/20:00', '2021-08-10/05:00'] # Encounter 9 (some sub-Alfvenic)
-#trange = ['2022-02-25', '2022-02-28'] #Dudok de wit 2020 Full interval
-
-#trange = ['2018-11-05/00:00', '2018-11-05/03:00'] # Bale 2019 event (includes Sr)
-#
-
 
 sub_alfs =  [['2022-09-06/06:00','2022-09-06/16:00'], # 10 hrs Encounter 13
 			 ['2022-09-06/18:00','2022-09-07/12:00'], # 18 hrs Encounter 13
@@ -201,7 +183,7 @@ sub_alfs =  [['2022-09-06/06:00','2022-09-06/16:00'], # 10 hrs Encounter 13
 			 ['2023-12-29/04:00','2023-12-29/14:00'], # 10 hrs Encounter 18
 			 ['2024-03-29/06:00','2024-03-29/21:00'], # 15 hrs Encounter 19
 			 ['2024-06-30/03:00','2024-06-30/18:00'], # 15 hrs Encounter 20
-			 ['2024-09-28/11:00','2024-09-28/18:00'], # 7 hrs Encounter 21
+			 ['2024-09-28/11:00','2024-09-28/18:00'] # 7 hrs Encounter 21
 			 ]
 
 
@@ -213,21 +195,23 @@ sup_alfs=	[['2022-09-07/18:00','2022-09-08/18:00'], # 24 hrs Encounter 13
 			 ['2023-12-25/14:00','2023-12-25/23:00'], # 9 hrs Encounter 18
 			 ['2024-04-01/10:00','2024-04-02/01:00'], # 15 hrs Encounter 19
 			 ['2024-07-01/20:00','2024-07-03/00:00'], # 28 hrs Encounter 20
-			 ['2024-10-03/00:00','2024-10-03/12:00'], # 12 hrs Encounter 21
+			 ['2024-10-03/00:00','2024-10-03/12:00'] # 12 hrs Encounter 21
 			 ]
 
-#sub_alfs =  ['2024-09-30/03:00','2024-09-30/11:00']
+near_alfs = [['2022-09-05/11:00','2022-09-05/17:00'], # 6 hrs Encounter 13
+			 ['2023-06-23/00:00','2023-06-23/18:00'], # 18 hrs Encounter 16
+			 ['2023-09-28/09:00','2023-09-28/18:00'], # 9 hrs Encounter 17
+			 ['2023-12-28/00:00','2023-12-29/00:00'], # 24 hrs Encounter 18
+			 ['2024-03-28/22:00','2024-03-29/05:00'], # 7 hrs Encounter 19
+			 ['2024-06-29/00:00','2024-06-29/09:00'], # 9 hrs Encounter 20 
+			 ['2024-10-01/15:00','2024-10-02/00:00'] # 9 hrs Encounter 21 
+			]
 
 recent_perihelia = [['2024-09-29/00:00', '2024-10-01/12:00'], #E21
 					['2024-06-29/00:00', '2024-07-01/12:00'], #E20
 					['2024-03-29/00:00','2024-03-31/00:00'], #E19
 					['2023-12-28/00:00','2023-12-30/00:00']] #E18
 
-# trange = ['2021-08-11/09:00', '2021-08-12/09:00'] # Soni 2024 Parker interval
-# trange = ['2024-09-30/00:00', '2024-09-30/23:59'] # E21 
-#trange = ['2024-12-24/00:00', '2024-12-25/00:00'] # E22 
-# trange = ['2025-03-22/00:00', '2025-03-23/00:00'] # E23
-# trange = ['2025-06-19/00:00', '2025-06-20/00:00'] # E24
 
 #Need to make a list of chosen Alfvenic & sub-alfvenic intervals
 #Most people choose a handful of intervals by eye
@@ -242,23 +226,17 @@ short_crossings = [['2021-11-21/21:00','2021-11-21/22:00'],
                    ['2024-03-29/22:00','2024-03-29/23:30'],  # E19 
                    ['2024-06-29/11:00', '2024-06-29/13:00']] # E20
 # eventlist = sub_alfs + sup_alfs
-eventlist = sub_alfs+sup_alfs
+eventlist = sub_alfs+sup_alfs+near_alfs
+
 
 #%%
 
 allBmags = np.array([])
 allvmags = np.array([])
-allva = np.array([])
-alldB = np.array([])
-alldv = np.array([])
 
-allangles=np.array([])
-allpositions=np.array([])
-allmachs=np.array([])
-allSr=np.array([])
-allKr=np.array([])
-allmachs=np.array([])
-allbetas=np.array([])
+
+alldBmag = np.array([])
+alldvmag = np.array([])
 alldB = np.array([])
 alldv = np.array([])
 alldv_par_norm = np.array([])
@@ -267,6 +245,19 @@ alldB_par_norm = np.array([])
 alldB_perp_norm = np.array([])
 alldB_norm_mag = np.array([])
 alldv_norm_mag = np.array([])
+alldn_norm = np.array([])
+
+allva = np.array([])
+
+allangles=np.array([])
+allpositions=np.array([])
+allmachs=np.array([])
+allSr=np.array([])
+allKr=np.array([])
+alldSmag=np.array([])
+alldKmag=np.array([])
+allmachs=np.array([])
+allbetas=np.array([])
 allvbalignment = np.array([])
 allcrosshelicity = np.array([])
 
@@ -395,6 +386,8 @@ for i in range(len(eventlist)):
 
 	Bvecs_mean = get_vecmean(Bvecs,minutes*meaninterval)
 	vivecs_mean = get_vecmean(vivecs,minutes*meaninterval)
+	S_mean = get_vecmean(S,minutes*meaninterval)
+	K_mean = get_vecmean(K,minutes*meaninterval)
 	Bmag_mean = get_mean(B_mag,minutes*meaninterval)
 	vmag_mean = get_mean(v_mag,minutes*meaninterval)
 	n_mean = get_mean(ni,minutes*meaninterval)
@@ -405,10 +398,15 @@ for i in range(len(eventlist)):
 	# Get dB,dv + components, etc. and vB alignment variable (proxy for alfvenicity)
 	dB,dB_norm = np.zeros_like(Bvecs),np.zeros_like(Bvecs)
 	dv,dv_norm = np.zeros_like(vivecs),np.zeros_like(vivecs)
+	dS,dS_norm = np.zeros_like(vivecs),np.zeros_like(vivecs)
+	dK,dK_norm = np.zeros_like(vivecs),np.zeros_like(vivecs)
 	dBmag = np.zeros_like(ni)
 	dvmag = np.zeros_like(ni)
+	dSmag = np.zeros_like(ni)
+	dKmag = np.zeros_like(ni)
 	dB_par,dB_perp = np.zeros_like(ni),np.zeros_like(ni)
 	dv_par,dv_perp = np.zeros_like(ni),np.zeros_like(ni)
+	dn,dn_norm = np.zeros_like(ni),np.zeros_like(ni)
 	B_par = np.zeros_like(ni)
 	v_par = np.zeros_like(ni)
 	dB_par_norm = np.zeros_like(ni)
@@ -440,8 +438,12 @@ for i in range(len(eventlist)):
 		# dB,dv & components
 		dB[i], dB_norm[i]= get_delta(Bvecs[i],Bvecs_mean[i])  # dB & dB/|B| (vectors)
 		dv[i], dv_norm[i]= get_delta(vivecs[i],vivecs_mean[i]) # dv & dv/|v| (vectors)
+		dS[i], dS_norm[i]= get_delta(S[i],S_mean[i]) # dS & dS/|S| (vectors)
+		dK[i], dK_norm[i]= get_delta(K[i],K_mean[i]) # dK & dK/|K| (vectors)
 		dBmag[i] = np.linalg.norm(dB[i])
 		dvmag[i] = np.linalg.norm(dv[i])
+		dSmag[i] = np.linalg.norm(dS[i])
+		dKmag[i] = np.linalg.norm(dK[i])
 		dB_norm_mag[i] = np.linalg.norm(dB_norm[i]) # |dB|/|B| (scalar)
 		dv_norm_mag[i] = np.linalg.norm(dv_norm[i]) # |dv|/|v| (scalar)
 		dB_par[i] = get_par(dB[i],Bvecs_mean[i])
@@ -453,6 +455,7 @@ for i in range(len(eventlist)):
 		dB_perp_norm[i] = dB_perp[i]/Bmag_mean[i]
 		dv_perp_norm[i] = dv_perp[i]/vmag_mean[i]
 
+		dn[i],dn_norm[i] = get_deltascalar(ni[i],n_mean[i])
 
 		sigma_r[i] = get_residenergy(dv[i],dB[i])
 		sigma_c[i] = get_crosshelicity(vivecs[i],Bvecs[i],ni[i],mi)
@@ -467,20 +470,26 @@ for i in range(len(eventlist)):
 	for i in range(len(timeax)): angle[i] = get_angle(Bvecs[i],Bvecs_mean[i])
 	angle_reduced = filter_angle(angle,low,high) #If you want all angles, do 0,180
 
+
 	allangles = np.concat([allangles,angle_reduced])
 	allmachs = np.concat([allmachs,ma_mean])
 	allpositions = np.concat([allpositions,position])
 	allSr = np.concat([allSr,S[:,0]])
 	allKr = np.concat([allKr,K[:,0]])
 	allbetas = np.concat([allbetas,beta_mean])
-	alldBmag = np.concat([alldB,dBmag])
-	alldvmag = np.concat([alldv,dvmag])
+	alldBmag = np.concat([alldBmag,dBmag])
+	alldvmag = np.concat([alldvmag,dvmag])
+
+	alldSmag = np.concat([alldSmag,dSmag])
+	alldKmag = np.concat([alldKmag,dKmag])
+
 	alldB_norm_mag = np.concat([alldB_norm_mag,dB_norm_mag])
 	alldv_norm_mag = np.concat([alldv_norm_mag,dv_norm_mag])
 	alldB_par_norm = np.concat([alldB_par_norm,dB_par_norm])
 	alldv_par_norm = np.concat([alldv_par_norm,dv_par_norm])
 	alldB_perp_norm = np.concat([alldB_perp_norm,dB_perp_norm])
 	alldv_perp_norm = np.concat([alldv_perp_norm,dv_perp_norm])
+	alldn_norm = np.concat([alldn_norm,dn_norm])
 	allBmags = np.concat([allBmags,Bmag_mean])
 	allvmags = np.concat([allvmags,vmag_mean])
 	allva = np.concat([allva,va_mean])
@@ -488,103 +497,358 @@ for i in range(len(eventlist)):
 	allcrosshelicity = np.concat([allcrosshelicity,sigma_c])
 	
 
-allvars = [allangles,allmachs,allpositions,
-           allSr,allKr,alldB_norm_mag,alldv_norm_mag,allBmags,allvmags]
 # %%
+
+varlist = [allangles,allmachs,allpositions,allSr,allKr,allbetas,alldBmag,alldvmag,alldB_norm_mag,alldv_norm_mag,
+           alldB_par_norm,alldv_par_norm,alldB_perp_norm,alldv_perp_norm,alldn_norm,allBmags,allvmags,
+		   allva,allvbalignment,allcrosshelicity,alldSmag,alldKmag]
+
+
 #%% Need a better filtering function
 
-allmachs_sub = np.zeros_like(allmachs)
-allmachs_sup = np.zeros_like(allmachs)
-def filter_intervals():
-	for i in range(len(allmachs)):
-		if (allmachs[i] > 1):
-			allmachs_sup[i] = allmachs[i]
-		elif (allmachs[i] < 1):
-			allmachs_sub[i] = allmachs[i]
-	return
+# allmachs_sub = np.zeros_like(allmachs)
+# allmachs_sup = np.zeros_like(allmachs)
+# def filter_intervals():
+# 	for i in range(len(allmachs)):
+# 		if (allmachs[i] > 1):
+# 			allmachs_sup[i] = allmachs[i]
+# 		elif (allmachs[i] < 1):
+# 			allmachs_sub[i] = allmachs[i]
+# 	return
 
 
-filter_intervals()
-
-
-
-#%%
+# filter_intervals()
 
 plt.plot(allpositions)
 # plt.plot(allangles)
-def filter_deltas(low):
-	for i in range(len(alldv_norm_mag)):
-		if (alldv_norm_mag[i] < low or alldB_norm_mag[i] < low):
-			alldv_norm_mag[i] = np.nan
-			alldB_norm_mag[i] = np.nan
-			allangles[i] = np.nan
-			allSr[i] = np.nan
-			allKr[i] = np.nan
-	return
-filter_deltas(0.2)
 
+
+
+def delta_filter(low):
+		for i in range(len(varlist[0])):
+			if (alldv_norm_mag[i] < low or alldB_norm_mag[i] < low):
+				for var in range(len(varlist)): 
+					varlist[var][i] = np.nan
+		return
+
+
+
+delta_filter(0.1)
+
+
+
+# def filter_deltas(low):
+# 	for i in range(len(alldv_norm_mag)):
+# 		if (alldv_norm_mag[i] < low or alldB_norm_mag[i] < low):
+# 			alldv_norm_mag[i] = np.nan
+# 			all
+# 			alldB_norm_mag[i] = np.nan
+# 			allangles[i] = np.nan
+# 			allSr[i] = np.nan
+# 			allKr[i] = np.nan
+# 			alldvmag[i] = np.nan
+# 	return
 #%%
+# %%
+
+
+
+
+
+
+# %%
 
 #%%
 
 fig,ax = plt.subplots(1,2,figsize=(10,5))
 ax[0].scatter(np.log10(allmachs),allSr,s=0.01)
 ax[1].scatter(np.log10(allmachs),allKr,s=0.01)
-ax[0].set_xlim(-0.5,0.5)
-ax[1].set_xlim(-0.5,0.5)
-ax[0].set_ylim(0,0.6)
-ax[1].set_ylim(0,0.6)
+
+ax[0].set_xlim(-0.8,0.8)
+ax[1].set_xlim(-0.8,0.8)
+ax[0].set_ylim(-0.01,0.1)
+ax[1].set_ylim(-0.01,0.1)
 # plt.axhline(y=0,color='k')
 ax[0].axvline(x=0,color='k')
 ax[1].axvline(x=0,color='k')
+ax[0].axhline(y=0,color='k')
+ax[1].axhline(y=0,color='k')
 
 ax[0].set_ylabel("Radial Poynting Flux")
 ax[1].set_ylabel("Radial Kinetic Energy Flux")
 ax[0].set_xlabel("Log10(Ma)")
 ax[1].set_xlabel("Log10(Ma)")
 
+#%%
 
+plt.scatter(allpositions,allSr,s=0.01)
+plt.ylim(-0.005,0.005)
+plt.axhline(y=0,color='k')
 
 #%%
+
+# Scatterplot - dB/B and dv/v
 fig,ax = plt.subplots(1,2,figsize=(10,5))
 ax[0].scatter(np.log10(allmachs),alldB_norm_mag,s=0.01)
+ax[0].scatter(np.log10(allmachs),abs(alldB_par_norm),s=0.01,alpha=0.5)
 ax[1].scatter(np.log10(allmachs),alldv_norm_mag,s=0.01)
-ax[0].set_xlim(-0.5,0.5)
-ax[1].set_xlim(-0.5,0.5)
+ax[1].scatter(np.log10(allmachs),abs(alldv_par_norm),s=0.01,alpha=0.5)
+ax[0].set_xlim(-0.8,0.8)
+ax[1].set_xlim(-0.8,0.8)
 # ax[0].set_ylim(0,3)
 # ax[1].set_ylim(0,3)
 # plt.axhline(y=0,color='k')
 plt.axvline(x=0,color='k')
-ax[0].set_ylabel("|dv|/|v|")
-ax[1].set_ylabel("|dB|/|B|")
+ax[0].set_ylabel("dB/B")
+ax[1].set_ylabel("dv/v")
+ax[0].set_xlabel("Log10(Ma)")
+ax[1].set_xlabel("Log10(Ma)")
+
+#%%
+
+
+
+#%%
+
+fig,ax = plt.subplots(1,2,figsize=(10,5))
+ax[0].scatter(np.log10(allmachs),alldSmag,s=0.01)
+ax[1].scatter(np.log10(allmachs),alldKmag,s=0.01)
+ax[0].set_xlim(-0.8,0.8)
+ax[1].set_xlim(-0.8,0.8)
+# ax[0].set_ylim(0,3)
+# ax[1].set_ylim(0,3)
+# plt.axhline(y=0,color='k')
+plt.axvline(x=0,color='k')
+ax[0].set_ylabel("dS")
+ax[1].set_ylabel("dK")
 ax[0].set_xlabel("Log10(Ma)")
 ax[1].set_xlabel("Log10(Ma)")
 
 
+
 #%%
-# Plot 1: Scatterplot - Ma vs theta
+# Scatterplot - dv/va and dB/B
+fig,ax = plt.subplots(1,2,figsize=(10,5))
+ax[0].scatter(np.log10(allmachs),alldB_norm_mag,s=0.01)
+ax[0].set_ylabel("dB/B")
+ax[0].set_xlim(0,0.8)
+ax[0].axvline(x=0,color='k')
+ax[0].set_xlabel("Log10(Ma)")
+
+
+ax[1].scatter(np.log10(allmachs),alldvmag/allva,s=0.01)
+ax[1].set_xlim(0,0.8)
+ax[1].axvline(x=0,color='k')
+ax[1].set_ylabel("dv/va")
+ax[1].set_xlabel("Log10(Ma)")
+
+
+
+
+
+# %%
+
+# %%
+plt.scatter(np.log10(allmachs),alldB_norm_mag,s=0.01)
+plt.scatter(np.log10(allmachs),alldv_norm_mag,s=0.01,alpha=0.7)
+plt.ylabel("dB/B")
+plt.xlim(-0.8,0)
+plt.axvline(x=0,color='k')
+plt.xlabel("Log10(Ma)")
+
+
+
+# %%
+
+# %%
+
+# %%
+
+# %%
+
+# %%
+
+# %%
+
+# %%
+
+# %%
+
+# %%
+
+# %%
+
+# %%
+
+# %%
+
+#%%
+# Scatterplot - Ma vs theta
 
 plt.scatter(np.log10(allmachs),allangles,s=0.1)
-plt.xlim(-0.5,0.5)
-plt.ylim(15,160)
+plt.xlim(-0.8,0.8)
+plt.ylim(0,160)
 plt.axhline(y=90,color='k')
 plt.axvline(x=0,color='k')
 plt.ylabel("Deflection Angle (degrees)")
 plt.xlabel("Log10(Ma)")
 
+#%%
+
+
+# Histograms - Sub & Super Angle Mach dependence
+bins=50
+fig, ax = plt.subplots(1,2,figsize=(12,6))
+ax[0].hist2d(np.log10(allmachs),allangles,range=[[-1,0],[0,180]],bins=bins,cmin=1,cmap='viridis')
+ax[0].set_xlabel('Log10 Alfven Mach Number')
+ax[0].set_ylabel('Deflection Angle (degrees)')
+ax[0].set_facecolor('k')
+ax[0].axhline(y=90,color='w')
+ax[0].axvline(x=0,color='w')
+ax[0].set_xlim(-0.8,0)
+ax[0].set_ylim(15,180)
 
 
 
+ax[1].hist2d(np.log10(allmachs),allangles,range=[[0,1.0],[0,180]],bins=bins,cmin=1,cmap='viridis')
+ax[1].set_xlabel('Log10 Alfven Mach Number')
+ax[1].set_ylabel('Deflection Angle (degrees)')
+ax[1].set_facecolor('k')
+ax[1].axhline(y=90,color='w')
+ax[1].axvline(x=0,color='w')
+ax[1].set_xlim(0,0.8)
+ax[1].set_ylim(15,180)
+
+# %%
+
+# %%
+
+# %%
+
+#%%
+
+x = np.log10(allmachs)
+y = allangles
+z = abs(alldvmag/allva)
+# z = abs(alldv_par_norm)
+# z = alldv_perp_norm
+
+# Define bins
+bins=60
+x_bins = np.linspace(-1, 1, bins)
+y_bins = np.linspace(0, 180, bins)
+
+# Calculate the mean of 'z' for each bin
+mean_z, x_edge, y_edge, bin_number = binned_statistic_2d(x, y, z, statistic='mean', bins=[x_bins, y_bins])
+
+# Plot the result
+plt.imshow(mean_z.T, origin='lower', extent=[x_edge[0], x_edge[-1], y_edge[0], y_edge[-1]], cmap='seismic',aspect='auto',vmin=0.25,vmax=1.75)
+plt.colorbar(label='|dv/va|')
+plt.xlim(-0.8,0.8)
+plt.ylim(0,180)
+plt.xlabel('Log10(Ma)')
+plt.ylabel('Deflection Angle (degrees)')
+plt.axhline(y=90,color='k')
+plt.axvline(x=0,color='k')
+plt.show()
+
+
+
+# %%
+
+plt.scatter(alldvmag/allva,alldB_norm_mag,s=0.11)
+
+# %%
+
+# %%
+
+# %%
+
+# %%
+
+# %%
+
+# %%
+
+# %%
+
+# %%
+
+# %%
+
+# %%
+
+# %%
+
+# %%
+# x = np.log10(allmachs)
+# y = allSr
+# z = alldv_norm_mag
+
+# # Define bins
+# bins=50
+# x_bins = np.linspace(-1, 1, bins)
+# y_bins = np.linspace(-0.01, 0.01, bins)
+
+# # Calculate the mean of 'z' for each bin
+# mean_z, x_edge, y_edge, bin_number = binned_statistic_2d(x, y, z, statistic='mean', bins=[x_bins, y_bins])
+
+# # Plot the result
+# plt.imshow(mean_z.T, origin='lower', extent=[x_edge[0], x_edge[-1], y_edge[0], y_edge[-1]], cmap='seismic',aspect='auto',vmin=0,vmax=2)
+# plt.colorbar(label='|dv/v|')
+# plt.xlim(-1,1)
+# plt.ylim(-0.01,0.01)
+# plt.xlabel('Log10(Ma)')
+# plt.ylabel('Sr')
+# plt.axhline(y=0,color='k')
+# plt.axvline(x=0,color='k')
+# plt.show()
+
+# %%
+
+# %%
+
+# %%
+
+# %%
+
+# %%
+
+# %%
+
+# %%
+
+# %%
+
+# %%
+
+# %%
+
+# %%
+
+# %%
+
+# %%
+
+# %%
+
+# %%
+
+# %%
+
+# %%
+
+# %%
 
 #%%
 # Plot 2 
 
 
-range=[0,2]
-plt.hist(alldB_norm_mag,bins=40,range=range,log=True)
-plt.hist(abs(alldB_par_norm),bins=40,log=True,range=range,histtype="step")
-plt.hist(abs(alldB_perp_norm),bins=40,log=True,range=range,histtype="step")
-plt.ylim(0.1,1000000)
+# range=[0,2]
+# plt.hist(alldB_norm_mag,bins=40,range=range,log=True)
+# plt.hist(abs(alldB_par_norm),bins=40,log=True,range=range,histtype="step")
+# plt.hist(abs(alldB_perp_norm),bins=40,log=True,range=range,histtype="step")
+# plt.ylim(0.1,1000000)
 #%%
 bins=100
 fig,ax = plt.subplots(1,3,figsize=(18,6))

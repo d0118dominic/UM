@@ -51,7 +51,7 @@ def machplot():
 	pyspedas.options('velocities','ytitle','Ion & Alfven Velocities')
 	pyspedas.options('velocities','color',['r','g'])
 	pyspedas.options('velocities','legend_names',['|vi|','|va|'])
-	pyspedas.tplot(['Mach','velocities'])
+	pyspedas.tplot(['Mach','position','velocities'])
 	return
 def fluxplot():
 	pyspedas.options(['S','K'], 'legend_names',['R','T','N'])
@@ -217,6 +217,13 @@ def get_delta(vec,vec_mean):
 	dvec_norm = dvec/np.linalg.norm(vec_mean)
 	return dvec,dvec_norm
 
+
+def get_deltascalar(var,var_mean):
+	dvar = var - var_mean
+	dvar_norm = dvar/var_mean
+	return dvar,dvar_norm
+
+
 def get_crosshelicity(v,B,n,m): #vector v & B
 	z_plus = v + B/(n*m*mu0)
 	z_minus = v - B/(n*m*mu0)
@@ -351,12 +358,17 @@ sup_alfs=	[['2022-09-07/18:00','2022-09-08/18:00'], # 24 hrs Encounter 13
 
 
 near_alfs = [['2022-09-05/11:00','2022-09-05/17:00'], # 6 hrs Encounter 13
-			 ['2022-09-05/11:00','2022-09-05/17:00'],
+			 ['2023-06-23/00:00','2023-06-23/18:00'], # 18 hrs Encounter 16
+			 ['2023-09-28/09:00','2023-09-28/18:00'], # 9 hrs Encounter 17
+			 ['2023-12-28/00:00','2023-12-29/00:00'], # 24 hrs Encounter 18
+			 ['2024-03-28/22:00','2024-03-29/05:00'], # 7 hrs Encounter 19
+			 ['2024-06-29/00:00','2024-06-29/09:00'], # 9 hrs Encounter 20 
+			 ['2024-10-01/15:00','2024-10-02/00:00'], # 9 hrs Encounter 21 
 ]
 
 #sub_alfs =  ['2024-09-30/03:00','2024-09-30/11:00']
 # trange=sub_alfs[]
-trange=['2023-06-18/00:00','2023-06-20/00:00']
+trange=near_alfs[6]
 
 # Alfven crossings (<2 hr)
 #trange = ['2021-11-21/21:00','2021-11-21/22:00']
@@ -392,7 +404,7 @@ spi_vars = pyspedas.projects.psp.spi(trange=trange,level='l3',time_clip=True)
 #voltages_vars = pyspedas.projects.psp.fields(trange=trange, datatype='dfb_wf_dvdc', level='l2',time_clip=True)
 #On DC datatype: 'sqn_rfs_V1V2 has some kind of electron density & core temp, but looks weird
 # spc_vars = pyspedas.projects.psp.spc(trange=trange, datatype='l2', level='l2')
-#%%1G
+##%%1G
 # Reform all data to simple arrays and convert to SI units 
 B_name = 'psp_fld_l2_mag_RTN'
 vi_name = 'psp_spi_VEL_RTN_SUN'
@@ -417,7 +429,7 @@ tinterpol(ni_name,interpvar_name,newname='ni')
 tinterpol(TiTensor_name,interpvar_name,newname='TiTensor')
 # tinterpol(voltages_name,interpvar_name,newname='voltages')
 tinterpol(position_name,interpvar_name,newname='position')
-#%%
+##%%
 Bvecs = 1e-9*reform(pytplot.get_data('B'))
 Bxyz = 1e-9*reform(pytplot.get_data('Bxyz'))
 vxyz = 1e3*reform(pytplot.get_data('vxyz'))
@@ -428,7 +440,7 @@ TiTensor = 1.602e-19*reform(pytplot.get_data('TiTensor'))
 # voltages = reform(get_data('voltages'))
 position = reform(get_data('position'))/695700 #Solar radii
 
-# %%
+##%%
 
 # Calculate B Magnitude & create Normalized Br/|B|
 Br,Bt,Bn = np.zeros_like(Bvecs[:,0]),np.zeros_like(Bvecs[:,0]),np.zeros_like(Bvecs[:,0])
@@ -497,7 +509,7 @@ for i in range(len(Bvecs)):
 	pressures[i] = [P_mag[i] + P_th[i],P_mag[i],P_th[i]]
 	parperps[i] = [Ppar[i], Pperp[i]]
 
-#%%
+##%%
 # Get averaged quantities.  meaninterval = 1 min ##
 minutes = 10
 
@@ -517,6 +529,7 @@ dB_par,dB_perp = np.zeros_like(ni),np.zeros_like(ni)
 dv_par,dv_perp = np.zeros_like(ni),np.zeros_like(ni)
 B_par = np.zeros_like(ni)
 v_par = np.zeros_like(ni)
+dn,dn_norm = np.zeros_like(ni),np.zeros_like(ni)
 dB_par_norm = np.zeros_like(ni)
 dB_perp_norm = np.zeros_like(ni)
 dv_par = np.zeros_like(ni)
@@ -545,6 +558,9 @@ for i in range(len(timeax)):
 	dB[i], dB_norm[i]= get_delta(Bvecs[i],Bvecs_mean[i])  # dB & dB/|B| (vectors)
 	dv[i], dv_norm[i]= get_delta(vivecs[i],vivecs_mean[i]) # dv & dv/|v| (vectors)
 	
+
+	# dn
+	dn[i],dn_norm[i] = get_deltascalar(ni[i],n_mean[i])
 	sigma_r[i] = get_residenergy(dv[i],dB[i])
 	sigma_c[i] = get_crosshelicity(vivecs[i],Bvecs[i],ni[i],mi)
 	
@@ -560,7 +576,7 @@ for i in range(len(timeax)):
 	dv_perp_norm[i] = dv_perp[i]/vmag_mean[i]
 
 
-low = 30
+low = 0
 high = 180
 angle_reduced = np.zeros_like(angle)
 for i in range(len(timeax)): angle[i] = get_angle(Bvecs[i],Bvecs_mean[i])
@@ -570,7 +586,7 @@ angle=angle_reduced
 # Make Tplot variables
 store_alldata()
 machplot()
-quickplot()
+# quickplot()
 fluxplot()
 #%%
 
@@ -627,14 +643,6 @@ for i in range(2):
 
 #%%
 
-fig, ax = plt.subplots(1,1,figsize=(8,8))
-ax.hist2d(np.log10(ma_mean),angle,range=[[-2,2],[0,180]],bins=500,cmin=1,cmap='viridis')
-ax.set_xlabel('Log10 Alfven Mach Number')
-ax.set_ylabel('Deflection Angle (degrees)')
-ax.axhline(y=90,color='w')
-ax.axvline(x=0,color='w')
-ax.set_xlim(-0.5,0.5)
-
 
 
 #%%
@@ -679,5 +687,11 @@ plt.show()
 # # Show the plot
 # plt.show()
 # # %%
+
+# %%
+
+
+
+
 
 # %%
