@@ -147,7 +147,8 @@ def get_pm(B):
 	pm = 0.5*(mu0**-1)*np.linalg.norm(B)**2
 	return pm
 def get_pth(n,T):
-	pth = kb*n*T
+	# pth = kb*n*T
+	pth = n*T
 	return pth
 
 
@@ -303,6 +304,12 @@ def store_alldata():
 	return
 
 # %%
+
+# %%
+
+# %%
+
+# %%
 # Get Mag Data
 # Encounters below 0.05 AU
 # Encounters below 0.08 AU 
@@ -325,7 +332,8 @@ def store_alldata():
 # 			 ['2022-06-01/18:00','2022-06-02/08:00'], # 14 hrs Encounter 12 
 
 # sup_alfs = 	[['2021-08-10/00:30','2021-08-10/06:00'], # 5.5 hrs Encounter 9
-# 			 ['2021-11-21/16:00','2021-11-21/21:00'], # 5 hrs Encounter 10
+# 			 ['2021-11-21/16:00','2021-11-21/21:00'], # 5 hr:w
+# Encounter 10
 # 			 ['2021-11-22/01:00','2021-11-22/02:30'], # 1.5 hrs Encounter 10
 # 			 ['2022-02-26/07:30','2022-02-26/08:30'], # 1 hr Encounter 11
 # 			 ['2022-06-02/13:00','2022-06-02/20:00'], # 7 hrs Encounter 12
@@ -368,7 +376,7 @@ near_alfs = [['2022-09-05/11:00','2022-09-05/17:00'], # 6 hrs Encounter 13
 
 #sub_alfs =  ['2024-09-30/03:00','2024-09-30/11:00']
 # trange=sub_alfs[]
-trange=near_alfs[6]
+trange=sup_alfs[0]
 
 # Alfven crossings (<2 hr)
 #trange = ['2021-11-21/21:00','2021-11-21/22:00']
@@ -379,7 +387,8 @@ trange=near_alfs[6]
 # trange = ['2024-09-28/00:00', '2024-10-05/12:00'] # E21 
 
 
-#trange = ['2021-08-11/09:00', '2021-08-12/09:00'] # Soni 2024 Parker interval
+trange = ['2021-08-12/00:30', '2021-08-12/02:30'] # Soni 2024 Parker interval
+trange = ['2020-01-30/00:00', '2020-02-02/00:00'] 
 #trange = ['2024-09-28/00:00', '2024-10-05/12:00'] # E21 
 # trange = ['2024-06-29/00:00', '2024-07-01/12:00'] # E20
 # trange=['2024-03-27/00:00','2024-04-02/00:00']  # E19 
@@ -437,6 +446,8 @@ vivecs = 1e3*reform(pytplot.get_data('vi'))
 ni = 1e6*reform(pytplot.get_data('ni'))
 Ti = 1.602e-19*reform(pytplot.get_data('Ti'))
 TiTensor = 1.602e-19*reform(pytplot.get_data('TiTensor'))
+#Ti = reform(pytplot.get_data('Ti'))/kb # Kelvin Units
+#TiTensor = reform(pytplot.get_data('TiTensor'))/kb # Kelvin Units
 # voltages = reform(get_data('voltages'))
 position = reform(get_data('position'))/695700 #Solar radii
 
@@ -587,8 +598,8 @@ angle=angle_reduced
 store_alldata()
 machplot()
 # quickplot()
-fluxplot()
-#%%
+betaplot()
+ #%%
 
 bins=30
 fig,ax = plt.subplots(1,2,figsize=(10,5))
