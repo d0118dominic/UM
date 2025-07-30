@@ -54,6 +54,19 @@ def filter_angle(angle,floor,ceiling):
 	for i in range(len(timeax)): 
 		if (angle[i] < floor or angle[i]>ceiling): angle_reduced[i] = np.nan
 	return angle_reduced
+
+def filter_deflections(var,floor):
+	filtered_var = np.zeros_like(var)
+	for i in range(len(var)):
+		if (alldv_norm_mag[i] < floor or alldB_norm_mag[i] < floor):
+			filtered_var[i] = np.nan
+		else:
+			filtered_var[i] = var[i]
+	return filtered_var
+
+
+
+
 def bin_angle(angle):
 	angle_binned = angle
 	for i in range(len(angle)):
@@ -206,6 +219,18 @@ near_alfs = [['2022-09-05/11:00','2022-09-05/17:00'], # 6 hrs Encounter 13
 			 ['2024-10-01/15:00','2024-10-02/00:00'] # 9 hrs Encounter 21 
 			]
 
+
+
+near_sups = [['2024-09-27/04:30','2024-09-27/06:30'], # 2 hr Encounter 21
+			 ['2024-10-03/23:00','2024-10-04/00:00'], # 1 hr Encounter 21
+			 ['2024-10-04/09:00','2024-10-04/10:00'], # 1 hr Encounter 21
+			 ['2024-06-29/04:45','2024-06-29/06:15'], # 1.5 hr Encounter 20
+			 ['2024-07-02/03:00','2024-07-02/08:00'], # 5 hr Encounter 20
+			 ['2024-03-28/03:30','2024-03-28/06:00'], # 2.5 hr Encounter 19
+			 ]
+
+
+
 recent_perihelia = [['2024-09-29/00:00', '2024-10-01/12:00'], #E21
 					['2024-06-29/00:00', '2024-07-01/12:00'], #E20
 					['2024-03-29/00:00','2024-03-31/00:00'], #E19
@@ -225,7 +250,8 @@ short_crossings = [['2021-11-21/21:00','2021-11-21/22:00'],
                    ['2024-03-29/22:00','2024-03-29/23:30'],  # E19 
                    ['2024-06-29/11:00', '2024-06-29/13:00']] # E20
 # eventlist = sub_alfs + sup_alfs
-eventlist = sub_alfs+sup_alfs+near_alfs
+# eventlist = sub_alfs+sup_alfs#+near_alfs
+eventlist = sup_alfs
 
 
 #%%
@@ -504,6 +530,21 @@ varlist = [allangles,allmachs,allpositions,allSr,allKr,allbetas,alldBmag,alldvma
            alldB_par_norm,alldv_par_norm,alldB_perp_norm,alldv_perp_norm,alldn_norm,allBmags,allvmags,
 		   allva,allvbalignment,allcrosshelicity,alldSmag,alldKmag,alldS_norm,alldK_norm]
 
+namelist = ['Angle','Ma','R','Sr','Kr','Beta','dB','dv','dB/B','dv/v','dBpar/B','dvpar/v','dBperp/B','dvperp/v','dn/n','Bmag','vmag','va','vbalignment','sigma_c','dS','dK','dS/S','dK/K']
+
+
+
+# import pandas as pd
+# shortlist = varlist[0:3]
+# shortnamelist = namelist[0:3]
+
+
+# newarr = np.vstack(shortlist)
+# df = pd.DataFrame([newarr])
+
+
+
+
 
 #%% Need a better filtering function
 
@@ -525,16 +566,6 @@ plt.plot(allpositions)
 
 
 
-def delta_filter(low):
-		for i in range(len(varlist[0])):
-			if (alldv_norm_mag[i] < low or alldB_norm_mag[i] < low):
-				for var in range(len(varlist)): 
-					varlist[var][i] = np.nan
-		return
-
-
-
-delta_filter(0.2)
 
 
 
@@ -545,27 +576,56 @@ delta_filter(0.2)
 
 #%%
 
-# def filter_deltas(low):
-# 	for i in range(len(alldv_norm_mag)):
-# 		if (alldv_norm_mag[i] < low or alldB_norm_mag[i] < low):
-# 			alldv_norm_mag[i] = np.nan
-# 			all
-# 			alldB_norm_mag[i] = np.nan
-# 			allangles[i] = np.nan
-# 			allSr[i] = np.nan
-# 			allKr[i] = np.nan
-# 			alldvmag[i] = np.nan
-# 	return
+
+floor = 0.1 # Choose the minimum deflection magnitude 
+
+# Filter all vars of interest (probably only need a few)
+filtered_angle = filter_deflections(allangles,floor)
+filtered_mach = filter_deflections(allmachs,floor)
+
+
+plt.scatter(filtered_mach,filtered_angle)
+
+
 #%%
-# %%
 
+# Deflection Angle vs mach number and position
+bins = 90
+fig,ax = plt.subplots(4,1,figsize=(8,16))
 
+ax[0].scatter(np.log10(allmachs),allangles,s=0.1)
+ax[0].set_xlim(-0.8,0.8)
+ax[0].set_ylim(15,160)
+ax[0].axhline(y=90,color='k')
+ax[0].axvline(x=0,color='k')
+ax[0].set_ylabel("Deflection Angle (degrees)")
+ax[0].set_xlabel("Log10(Ma)")
 
+ax[1].hist2d(np.log10(allmachs),allangles,range=[[-1,1.0],[0,180]],bins=bins,cmin=1,cmap='viridis')
+ax[1].set_xlabel('Log10(Ma)')
+ax[1].set_ylabel('Deflection Angle (degrees)')
+ax[1].set_facecolor('k')
+ax[1].axhline(y=90,color='w')
+ax[1].axvline(x=0,color='w')
+ax[1].set_xlim(-0.8,0.8)
+ax[1].set_ylim(15,160)
 
+ax[2].scatter(allpositions,allangles,s=0.1)
+ax[2].set_xlim(0,45)
+ax[2].set_ylim(15,160)
+ax[2].axhline(y=90,color='k')
+ax[2].axvline(x=0,color='k')
+ax[2].set_ylabel("Deflection Angle (degrees)")
+ax[2].set_xlabel("Log10(Ma)")
 
-
-# %%
-
+ax[3].hist2d(allpositions,allangles,range=[[10,45],[0,180]],bins=bins,cmin=1,cmap='viridis')
+ax[3].set_xlabel('Log10(Ma)')
+ax[3].set_ylabel('Deflection Angle (degrees)')
+ax[3].set_facecolor('k')
+ax[3].axhline(y=90,color='w')
+ax[3].axvline(x=0,color='w')
+ax[3].set_xlim(0,45)
+ax[3].set_ylim(15,160)
 #%%
 
 fig,ax = plt.subplots(1,2,figsize=(10,5))
@@ -643,70 +703,56 @@ fig,ax = plt.subplots(1,2,figsize=(10,5))
 ax[0].scatter(np.log10(allmachs),alldB_norm_mag,s=0.01)
 ax[0].set_ylabel("dB/B")
 ax[0].set_xlim(-0.8,0.8)
-ax[0].set_ylim(0.2,0.8)
+ax[0].set_ylim(0.,2)
 ax[0].axvline(x=0,color='k')
 ax[0].set_xlabel("Log10(Ma)")
 
 
 ax[1].scatter(np.log10(allmachs),alldvmag/allva,s=0.01)
 ax[1].set_xlim(-0.8,0.8)
-ax[1].set_ylim(0.2,0.8)
+ax[1].set_ylim(0.,2)
 ax[1].axvline(x=0,color='k')
 ax[1].set_ylabel("dv/va")
 ax[1].set_xlabel("Log10(Ma)")
+ax[1].axhline(y=1,linestyle='dotted',color='k')
+ax[0].axhline(y=1,linestyle='dotted',color='k')
 
 
 
 
+
+# %%
+
+# %%
+
+# %%
+
+# %%
+
+# %%
+
+# %%
 
 # %%
 
 # %%
 plt.scatter(np.log10(allmachs),alldB_norm_mag,s=0.01)
-plt.scatter(np.log10(allmachs),alldv_norm_mag,s=0.01,alpha=0.7)
+plt.scatter(np.log10(allmachs),alldvmag/allva,s=0.01,alpha=0.7)
 plt.ylabel("dB/B")
 plt.xlim(-0.8,0)
 plt.axvline(x=0,color='k')
 plt.xlabel("Log10(Ma)")
+
 #%%
 
-# Deflection Angle vs mach number and position
-bins = 90
-fig,ax = plt.subplots(4,1,figsize=(8,16))
 
-ax[0].scatter(np.log10(allmachs),allangles,s=0.1)
-ax[0].set_xlim(-0.8,0.8)
-ax[0].set_ylim(15,160)
-ax[0].axhline(y=90,color='k')
-ax[0].axvline(x=0,color='k')
-ax[0].set_ylabel("Deflection Angle (degrees)")
-ax[0].set_xlabel("Log10(Ma)")
 
-ax[1].hist2d(np.log10(allmachs),allangles,range=[[-1,1.0],[0,180]],bins=bins,cmin=1,cmap='viridis')
-ax[1].set_xlabel('Log10(Ma)')
-ax[1].set_ylabel('Deflection Angle (degrees)')
-ax[1].set_facecolor('k')
-ax[1].axhline(y=90,color='w')
-ax[1].axvline(x=0,color='w')
-ax[1].set_xlim(-0.8,0.8)
-ax[1].set_ylim(15,160)
 
-ax[2].scatter(allpositions,allangles,s=0.1)
-ax[2].set_xlim(0,45)
-ax[2].set_ylim(15,160)
-ax[2].axhline(y=90,color='k')
-ax[2].axvline(x=0,color='k')
-ax[2].set_ylabel("Deflection Angle (degrees)")
-ax[2].set_xlabel("Log10(Ma)")
 
-ax[3].hist2d(allpositions,allangles,range=[[10,45],[0,180]],bins=bins,cmin=1,cmap='viridis')
-ax[3].set_xlabel('Log10(Ma)')
-ax[3].set_ylabel('Deflection Angle (degrees)')
-ax[3].set_facecolor('k')
-ax[3].axhline(y=90,color='w')
-ax[3].axvline(x=0,color='w')
-ax[3].set_xlim(0,45)
-ax[3].set_ylim(15,160)
+#%%
+
+# %%
+
 #%%
 
 # dv/v dependence on Ma and deflection angle
@@ -714,6 +760,7 @@ ax[3].set_ylim(15,160)
 x = np.log10(allmachs) # x axis
 y = allangles # y axis
 z = alldv_norm_mag # variable for colorbar
+# z = alldv_perp_norm # variable for colorbar
 
 # Define bins
 bins=40
@@ -738,11 +785,14 @@ plt.show()
 
 # %%
 
+# %%
+
 # dB/B dependence on Ma and deflection angle
 
 x = np.log10(allmachs) # x axis
 y = allangles # y axis
 z = alldB_norm_mag # variable for colorbar
+z = alldB_perp_norm # variable for colorbar
 
 # Define bins
 bins=40
@@ -754,7 +804,7 @@ mean_z, x_edge, y_edge, bin_number = binned_statistic_2d(x, y, z, statistic='mea
 
 # Plot the result
 plt.imshow(mean_z.T, origin='lower', extent=[x_edge[0], x_edge[-1], y_edge[0], y_edge[-1]], cmap='seismic',aspect='auto',vmin=0.25,vmax=1.75)
-plt.colorbar(label='|dB/B|')
+plt.colorbar(label='|dB_perp/B|')
 plt.xlim(-0.6,0.6)
 plt.ylim(20,160)
 plt.xlabel('Log10(Ma)')
@@ -779,7 +829,7 @@ y_bins = np.linspace(0, 180, bins)
 mean_z, x_edge, y_edge, bin_number = binned_statistic_2d(x, y, z, statistic='mean', bins=[x_bins, y_bins])
 
 # Plot the result
-plt.imshow(mean_z.T, origin='lower', extent=[x_edge[0], x_edge[-1], y_edge[0], y_edge[-1]], cmap='seismic',aspect='auto',vmin=0,vmax=2)
+plt.imshow(mean_z.T, origin='lower', extent=[x_edge[0], x_edge[-1], y_edge[0], y_edge[-1]], cmap='seismic',aspect='auto',vmin=0.25,vmax=1.75)
 plt.colorbar(label='|dv/va|')
 plt.xlim(-0.6,0.6)
 plt.ylim(20,160)
@@ -792,28 +842,10 @@ plt.show()
 # %%
 
 # %%
-x = allSr
-y = allKr
-z = alldv_norm_mag
 
-# Define bins
-bins=30
-x_bins = np.linspace(0, 0.5, bins)
-y_bins = np.linspace(0, 0.5, bins)
+# %%
 
-# Calculate the mean of 'z' for each bin
-mean_z, x_edge, y_edge, bin_number = binned_statistic_2d(x, y, z, statistic='mean', bins=[x_bins, y_bins])
-
-# Plot the result
-plt.imshow(mean_z.T, origin='lower', extent=[x_edge[0], x_edge[-1], y_edge[0], y_edge[-1]], cmap='seismic',aspect='auto',vmin=0,vmax=2)
-plt.colorbar(label='|dv/v|')
-plt.xlim(0,0.5)
-plt.ylim(0,0.5)
-plt.xlabel('Sr')
-plt.ylabel('Kr')
-plt.axhline(y=0,color='k')
-plt.axvline(x=0,color='k')
-plt.show()
+# %%
 
 # %%
 
@@ -824,7 +856,7 @@ y = allangles # y axis
 z = allbetas # variable for colorbar
 
 # Define bins
-bins=40
+bins=100
 x_bins = np.linspace(-1, 1, bins)
 y_bins = np.linspace(0, 180, bins)
 
