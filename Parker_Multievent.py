@@ -151,7 +151,12 @@ def get_K(m,n,v):
 	K = 0.5*m*n*v**3
 	return K
 def get_H(v,P):
-	H = 0.5*v*np.trace(P) + np.dot(v,P)
+	traceP = P[0]+P[1]+P[2]
+	vdPx = v[0]*(P[0]+P[3]+P[4])
+	vdPy = v[1]*(P[1]+P[3]+P[5])
+	vdPz = v[2]*(P[2]+P[4]+P[5])
+	vdotP = np.array([vdPx,vdPy,vdPz])
+	H = 0.5*v*traceP + vdotP
 	return H
 def get_S(E,B):
 	S = np.cross(E,B)/mu0
@@ -169,8 +174,8 @@ def get_vecmean(vec,int):   # Vector mean
 	return vec_mean
 
 def get_crosshelicity(v,B,n,m): #vector v & B
-	z_plus = v + B/(n*m*mu0)
-	z_minus = v - B/(n*m*mu0)
+	z_plus = v + B/np.sqrt(n*m*mu0)
+	z_minus = v - B/np.sqrt(n*m*mu0)
 	term1 = np.linalg.norm(z_plus)**2 - np.linalg.norm(z_minus)**2
 	term2 = np.linalg.norm(z_plus)**2 + np.linalg.norm(z_minus)**2
 	sigma_c = term1/term2
@@ -227,10 +232,17 @@ near_sups = [['2024-09-27/04:30','2024-09-27/06:30'], # 2 hr Encounter 21
 			 ['2024-06-29/04:45','2024-06-29/06:15'], # 1.5 hr Encounter 20
 			 ['2024-07-02/03:00','2024-07-02/08:00'], # 5 hr Encounter 20
 			 ['2024-03-28/03:30','2024-03-28/06:00'], # 2.5 hr Encounter 19
+			 ['2023-12-29/22:00','2023-12-30/03:00'], # 5 hrs Encounter 18
+			 ['2023-09-29/00:00','2023-09-29/06:00'], # 6 hrs Encounter 17
+			 ['2023-09-28/18:00','2023-09-28/21:00'], # 3 hrs Encounter 17
 			 ]
 
-
-
+near_subs = [['2024-09-27/07:30','2024-09-27/8:30'], # 1 hr Encounter 21
+			 ['2024-09-30/23:00','2024-10-01/01:00'],# 2 hr Encounter 21
+			 ['2024-06-29/16:00','2024-06-29/21:00'],# 5 hr Encounter 20
+			 ['2024-03-30/07:00','2024-03-30/11:00'], # 4 hr Encounter 19
+			 ['2023-12-28/12:00','2023-12-28/15:00'], # 3 hrs Encounter 18
+			 ]
 recent_perihelia = [['2024-09-29/00:00', '2024-10-01/12:00'], #E21
 					['2024-06-29/00:00', '2024-07-01/12:00'], #E20
 					['2024-03-29/00:00','2024-03-31/00:00'], #E19
@@ -251,14 +263,16 @@ short_crossings = [['2021-11-21/21:00','2021-11-21/22:00'],
                    ['2024-06-29/11:00', '2024-06-29/13:00']] # E20
 # eventlist = sub_alfs + sup_alfs
 # eventlist = sub_alfs+sup_alfs#+near_alfs
-eventlist = sup_alfs
+eventlist = sub_alfs+sup_alfs+near_subs+near_sups
 
 
 #%%
 
 allBmags = np.array([])
 allvmags = np.array([])
-
+allSmags = np.array([])
+allKmags = np.array([])
+allHmags = np.array([])
 
 alldBmag = np.array([])
 alldvmag = np.array([])
@@ -334,7 +348,8 @@ for i in range(len(eventlist)):
 	vivecs = 1e3*reform(pytplot.get_data('vi'))
 	ni = 1e6*reform(pytplot.get_data('ni'))
 	Ti = 1.602e-19*reform(pytplot.get_data('Ti'))
-	TiTensor = 1.602e-19*reform(pytplot.get_data('TiTensor'))
+	TiTensor = 1.602e-19*reform(pytplot.get_data('TiTensor')) #Comes in xyz
+	# PiTensor = ni*TiTensor
 	# voltages = reform(get_data('voltages'))
 	position = reform(get_data('position'))/695700 #Solar radii
 
@@ -388,8 +403,9 @@ for i in range(len(eventlist)):
 		
 		E_conv[i] = -get_vxb(vivecs[i],Bvecs[i])
 		# E_antennas[i] = voltages[i]/3.5
-		S[i] = get_S(E_conv[i],Bvecs[i])
-		K[i] = get_K(mi,ni[i],vivecs[i])
+		S[i] = get_S(E_conv[i],Bvecs[i]) #RTN
+		K[i] = get_K(mi,ni[i],vivecs[i]) #RTN
+		H[i] = get_H(vxyz[i],ni[i]*TiTensor[i]) #XYZ
 
 		Tpar[i],Tperp[i],Ppar[i],Pperp[i] = get_parperps(ni[i],TiTensor[i],Bxyz[i])
 		
@@ -415,6 +431,7 @@ for i in range(len(eventlist)):
 	vivecs_mean = get_vecmean(vivecs,minutes*meaninterval)
 	S_mean = get_vecmean(S,minutes*meaninterval)
 	K_mean = get_vecmean(K,minutes*meaninterval)
+	H_mean = get_vecmean(H,minutes*meaninterval)
 	Bmag_mean = get_mean(B_mag,minutes*meaninterval)
 	vmag_mean = get_mean(v_mag,minutes*meaninterval)
 	n_mean = get_mean(ni,minutes*meaninterval)
@@ -427,10 +444,17 @@ for i in range(len(eventlist)):
 	dv,dv_norm = np.zeros_like(vivecs),np.zeros_like(vivecs)
 	dS,dS_norm = np.zeros_like(vivecs),np.zeros_like(vivecs)
 	dK,dK_norm = np.zeros_like(vivecs),np.zeros_like(vivecs)
+	dH,dH_norm = np.zeros_like(vivecs),np.zeros_like(vivecs)
 	dBmag = np.zeros_like(ni)
 	dvmag = np.zeros_like(ni)
 	dSmag = np.zeros_like(ni)
 	dKmag = np.zeros_like(ni)
+	dHmag = np.zeros_like(ni)
+	Smag = np.zeros_like(ni)
+	Kmag = np.zeros_like(ni)
+	Hmag = np.zeros_like(ni)
+	# Hmag = np.zeros_like(ni)
+
 	dB_par,dB_perp = np.zeros_like(ni),np.zeros_like(ni)
 	dv_par,dv_perp = np.zeros_like(ni),np.zeros_like(ni)
 	dn,dn_norm = np.zeros_like(ni),np.zeros_like(ni)
@@ -465,12 +489,21 @@ for i in range(len(eventlist)):
 		# dB,dv & components
 		dB[i], dB_norm[i]= get_delta(Bvecs[i],Bvecs_mean[i])  # dB & dB/|B| (vectors)
 		dv[i], dv_norm[i]= get_delta(vivecs[i],vivecs_mean[i]) # dv & dv/|v| (vectors)
+		
+		dH[i], dH_norm[i]= get_delta(H[i],H_mean[i]) # dH & dH/|H| (vectors)
 		dS[i], dS_norm[i]= get_delta(S[i],S_mean[i]) # dS & dS/|S| (vectors)
 		dK[i], dK_norm[i]= get_delta(K[i],K_mean[i]) # dK & dK/|K| (vectors)
+		
 		dBmag[i] = np.linalg.norm(dB[i])
 		dvmag[i] = np.linalg.norm(dv[i])
 		dSmag[i] = np.linalg.norm(dS[i])
 		dKmag[i] = np.linalg.norm(dK[i])
+		dHmag[i] = np.linalg.norm(dH[i])
+
+		Smag[i] = np.linalg.norm(S[i])
+		Kmag[i] = np.linalg.norm(K[i])
+		Hmag[i] = np.linalg.norm(H[i])
+		
 		dB_norm_mag[i] = np.linalg.norm(dB_norm[i]) # |dB|/|B| (scalar)
 		dv_norm_mag[i] = np.linalg.norm(dv_norm[i]) # |dv|/|v| (scalar)
 		dB_par[i] = get_par(dB[i],Bvecs_mean[i])
@@ -500,15 +533,21 @@ for i in range(len(eventlist)):
 
 	allangles = np.concat([allangles,angle_reduced])
 	allmachs = np.concat([allmachs,ma_mean])
+	# allmachs = np.concat([allmachs,ma_mean])
 	allpositions = np.concat([allpositions,position])
 	allSr = np.concat([allSr,S[:,0]])
 	allKr = np.concat([allKr,K[:,0]])
+	allHr = np.concat([allKr,H[:,0]])
 	allbetas = np.concat([allbetas,beta_mean])
 	alldBmag = np.concat([alldBmag,dBmag])
 	alldvmag = np.concat([alldvmag,dvmag])
 
 	alldSmag = np.concat([alldSmag,dSmag])
 	alldKmag = np.concat([alldKmag,dKmag])
+	alldHmag = np.concat([alldKmag,dKmag])
+	allSmags = np.concat([allSmags,Smag])
+	allKmags = np.concat([allKmags,Kmag])
+	allHmags = np.concat([allHmags,Hmag])
 	
 	alldB_norm_mag = np.concat([alldB_norm_mag,dB_norm_mag])
 	alldv_norm_mag = np.concat([alldv_norm_mag,dv_norm_mag])
@@ -561,8 +600,8 @@ namelist = ['Angle','Ma','R','Sr','Kr','Beta','dB','dv','dB/B','dv/v','dBpar/B',
 
 # filter_intervals()
 
-plt.plot(allpositions)
-# plt.plot(allangles)
+#plt.plot(allpositions)
+# plt.plot(allcrosshelicity)
 
 
 
@@ -577,7 +616,7 @@ plt.plot(allpositions)
 #%%
 
 
-floor = 0.1 # Choose the minimum deflection magnitude 
+floor = 0.3 # Choose the minimum deflection magnitude 
 
 # Filter all vars of interest (probably only need a few)
 filtered_angle = filter_deflections(allangles,floor)
@@ -590,42 +629,48 @@ plt.scatter(filtered_mach,filtered_angle)
 #%%
 
 # Deflection Angle vs mach number and position
-bins = 90
+bins = 30
 fig,ax = plt.subplots(4,1,figsize=(8,16))
+
+
+# allmachs = filtered_mach
 
 ax[0].scatter(np.log10(allmachs),allangles,s=0.1)
 ax[0].set_xlim(-0.8,0.8)
-ax[0].set_ylim(15,160)
+ax[0].set_ylim(0,180)
 ax[0].axhline(y=90,color='k')
 ax[0].axvline(x=0,color='k')
 ax[0].set_ylabel("Deflection Angle (degrees)")
 ax[0].set_xlabel("Log10(Ma)")
 
-ax[1].hist2d(np.log10(allmachs),allangles,range=[[-1,1.0],[0,180]],bins=bins,cmin=1,cmap='viridis')
+ax[1].hist2d(np.log10(allmachs),allangles,range=[[-1,1.0],[0,180]],bins=bins,cmin=2,cmap='viridis')
 ax[1].set_xlabel('Log10(Ma)')
 ax[1].set_ylabel('Deflection Angle (degrees)')
 ax[1].set_facecolor('k')
 ax[1].axhline(y=90,color='w')
 ax[1].axvline(x=0,color='w')
 ax[1].set_xlim(-0.8,0.8)
-ax[1].set_ylim(15,160)
+ax[1].set_ylim(0,180)
 
 ax[2].scatter(allpositions,allangles,s=0.1)
 ax[2].set_xlim(0,45)
-ax[2].set_ylim(15,160)
+ax[2].set_ylim(0,180)
 ax[2].axhline(y=90,color='k')
 ax[2].axvline(x=0,color='k')
 ax[2].set_ylabel("Deflection Angle (degrees)")
 ax[2].set_xlabel("Log10(Ma)")
 
-ax[3].hist2d(allpositions,allangles,range=[[10,45],[0,180]],bins=bins,cmin=1,cmap='viridis')
+ax[3].hist2d(allpositions,allangles,range=[[10,45],[0,180]],bins=bins,cmin=2,cmap='viridis')
 ax[3].set_xlabel('Log10(Ma)')
 ax[3].set_ylabel('Deflection Angle (degrees)')
 ax[3].set_facecolor('k')
 ax[3].axhline(y=90,color='w')
 ax[3].axvline(x=0,color='w')
 ax[3].set_xlim(0,45)
-ax[3].set_ylim(15,160)
+ax[3].set_ylim(0,180)
+#%%
+
+
 #%%
 
 fig,ax = plt.subplots(1,2,figsize=(10,5))
@@ -654,13 +699,193 @@ plt.ylim(-0.005,0.005)
 plt.axhline(y=0,color='k')
 
 #%%
+x = np.log10(allmachs) # x axis
+y = allangles # y axis
+z = allcrosshelicity  # variable for colorbar
 
+# Define bins
+bins=20
+x_bins = np.linspace(-1.2, 1.2, bins)
+y_bins = np.linspace(0, 180, bins)
+
+# Calculate the mean of 'z' for each bin
+mean_z, x_edge, y_edge, bin_number = binned_statistic_2d(x, y, z, statistic='mean', bins=[x_bins, y_bins])
+
+# Plot the result
+plt.imshow(mean_z.T, origin='lower', extent=[x_edge[0], x_edge[-1], y_edge[0], y_edge[-1]], cmap='seismic',aspect='auto',vmin=-1,vmax=1)
+plt.colorbar(label='sigma_c')
+plt.xlim(-1.2,1.2)
+plt.ylim(0,160)
+plt.xlabel('Log10(Ma)')
+plt.ylabel('Deflection Angle (degrees)')
+plt.axhline(y=90,color='k')
+plt.axvline(x=0,color='k')
+plt.show()
+
+
+
+
+#%%
+# x = np.log10(allmachs) # x axis
+x = np.log10(allmachs) # x axis
+y = allangles # y axis
+z = alldv_norm_mag  # variable for colorbar
+
+# Define bins
+bins=30
+x_bins = np.linspace(-1.2, 1.2, bins)
+y_bins = np.linspace(0, 180, bins)
+
+# Calculate the mean of 'z' for each bin
+mean_z, x_edge, y_edge, bin_number = binned_statistic_2d(x, y, z, statistic='mean', bins=[x_bins, y_bins])
+
+# Plot the result
+plt.imshow(mean_z.T, origin='lower', extent=[x_edge[0], x_edge[-1], y_edge[0], y_edge[-1]], cmap='seismic',aspect='auto',vmin=0.25,vmax=1.75)
+plt.colorbar(label='|dv/v|')
+plt.xlim(-1.2,1.2)
+plt.ylim(0,160)
+plt.xlabel('Log10(Ma)')
+plt.ylabel('Deflection Angle (degrees)')
+plt.axhline(y=90,color='k')
+plt.axvline(x=0,color='k')
+plt.show()
+#%%
+
+x = np.log10(filtered_mach) # x axis
+y = allangles # y axis
+z = alldv_norm_mag  # variable for colorbar
+
+# Define bins
+bins=20
+xlims = [-0.6,0.4]
+x_bins = np.linspace(xlims[0], xlims[1], bins)
+y_bins = np.linspace(0, 180, bins)
+
+# Calculate the mean of 'z' for each bin
+mean_z, x_edge, y_edge, bin_number = binned_statistic_2d(x, y, z, statistic='min', bins=[x_bins, y_bins])
+
+# Plot the result
+plt.imshow(mean_z.T, origin='lower', extent=[x_edge[0], x_edge[-1], y_edge[0], y_edge[-1]], cmap='seismic',aspect='auto',vmin=0.25,vmax=1.75)
+plt.colorbar(label='|dv/v|')
+plt.xlim(xlims[0],xlims[1])
+plt.ylim(0,160)
+plt.xlabel('Log10(Ma)')
+plt.ylabel('Deflection Angle (degrees)')
+plt.axhline(y=90,color='k')
+plt.axvline(x=0,color='k')
+plt.show()
+
+
+#%%
+
+x = np.log10(allmachs) # x axis
+y = allangles # y axis
+z = alldvmag/allva # variable for colorbar
+
+# Define bins
+bins=30
+x_bins = np.linspace(-1.2, 1.2, bins)
+y_bins = np.linspace(0, 180, bins)
+
+# Calculate the mean of 'z' for each bin
+mean_z, x_edge, y_edge, bin_number = binned_statistic_2d(x, y, z, statistic='mean', bins=[x_bins, y_bins])
+
+# Plot the result
+plt.imshow(mean_z.T, origin='lower', extent=[x_edge[0], x_edge[-1], y_edge[0], y_edge[-1]], cmap='seismic',aspect='auto',vmin=0.,vmax=2.)
+plt.colorbar(label='|dv/va|')
+plt.xlim(-1.2,1.2)
+plt.ylim(0,160)
+plt.xlabel('Log10(Ma)')
+plt.ylabel('Deflection Angle (degrees)')
+plt.axhline(y=90,color='k')
+plt.axvline(x=0,color='k')
+plt.show()
+
+
+#%%
+
+
+#%%
+x = np.log10(allmachs) # x axis
+y = allangles # y axis
+z = allSmags # variable for colorbar
+# z = alldv_perp_norm # variable for colorbar
+
+# Define bins
+bins=30
+x_bins = np.linspace(-1.2, 1.2, bins)
+y_bins = np.linspace(0, 180, bins)
+
+# Calculate the mean of 'z' for each bin
+mean_z, x_edge, y_edge, bin_number = binned_statistic_2d(x, y, z, statistic='mean', bins=[x_bins, y_bins])
+
+# Plot the result
+plt.imshow(mean_z.T, origin='lower', extent=[x_edge[0], x_edge[-1], y_edge[0], y_edge[-1]], cmap='plasma',aspect='auto',vmin=0.,vmax=0.2)
+plt.colorbar(label='|S|')
+plt.xlim(-1.2,1.2)
+plt.ylim(0,160)
+plt.xlabel('Log10(Ma)')
+plt.ylabel('Deflection Angle (degrees)')
+plt.axhline(y=90,color='k')
+plt.axvline(x=0,color='k')
+plt.show()
+
+
+z = allKmags # variable for colorbar
+# z = alldv_perp_norm # variable for colorbar
+
+# Define bins
+
+# Calculate the mean of 'z' for each bin
+mean_z, x_edge, y_edge, bin_number = binned_statistic_2d(x, y, z, statistic='mean', bins=[x_bins, y_bins])
+
+# Plot the result
+plt.imshow(mean_z.T, origin='lower', extent=[x_edge[0], x_edge[-1], y_edge[0], y_edge[-1]], cmap='plasma',aspect='auto',vmin=0.,vmax=0.2)
+plt.colorbar(label='|K|')
+plt.xlim(-1.2,1.2)
+plt.ylim(0,160)
+plt.xlabel('Log10(Ma)')
+plt.ylabel('Deflection Angle (degrees)')
+plt.axhline(y=90,color='k')
+plt.axvline(x=0,color='k')
+plt.show()
+
+z = allHmags # variable for colorbar
+# z = alldv_perp_norm # variable for colorbar
+
+# Define bins
+
+# Calculate the mean of 'z' for each bin
+mean_z, x_edge, y_edge, bin_number = binned_statistic_2d(x, y, z, statistic='mean', bins=[x_bins, y_bins])
+
+# Plot the result
+plt.imshow(mean_z.T, origin='lower', extent=[x_edge[0], x_edge[-1], y_edge[0], y_edge[-1]], cmap='plasma',aspect='auto',vmin=0.,vmax=0.2)
+plt.colorbar(label='|H|')
+plt.xlim(-1.2,1.2)
+plt.ylim(0,160)
+plt.xlabel('Log10(Ma)')
+plt.ylabel('Deflection Angle (degrees)')
+plt.axhline(y=90,color='k')
+plt.axvline(x=0,color='k')
+plt.show()
+
+# %%
+
+plt.show()
+#%%
+
+
+
+
+
+
+#%%
 # Scatterplot - dB/B and dv/v
 fig,ax = plt.subplots(1,2,figsize=(10,5))
 ax[0].scatter(np.log10(allmachs),alldB_norm_mag,s=0.1)
-# ax[0].scatter(np.log10(allmachs),abs(alldB_par_norm),s=0.01,alpha=0.5)
+ax[0].scatter(np.log10(allmachs),abs(alldB_par_norm),s=0.01,alpha=0.5)
 ax[1].scatter(np.log10(allmachs),alldv_norm_mag,s=0.1)
-# ax[1].scatter(np.log10(allmachs),abs(alldv_par_norm),s=0.01,alpha=0.5)
+ax[1].scatter(np.log10(allmachs),abs(alldv_par_norm),s=0.01,alpha=0.5)
 ax[0].set_xlim(-0.8,0.8)
 ax[1].set_xlim(-0.8,0.8)
 # ax[0].set_ylim(0,3)
@@ -694,6 +919,7 @@ ax[0].set_ylabel("dS/dK")
 ax[1].set_ylabel("Sr/Kr")
 ax[0].set_xlabel("Log10(Ma)")
 ax[1].set_xlabel("Log10(Ma)")
+
 
 
 
@@ -757,29 +983,6 @@ plt.xlabel("Log10(Ma)")
 
 # dv/v dependence on Ma and deflection angle
 
-x = np.log10(allmachs) # x axis
-y = allangles # y axis
-z = alldv_norm_mag # variable for colorbar
-# z = alldv_perp_norm # variable for colorbar
-
-# Define bins
-bins=40
-x_bins = np.linspace(-1, 1, bins)
-y_bins = np.linspace(0, 180, bins)
-
-# Calculate the mean of 'z' for each bin
-mean_z, x_edge, y_edge, bin_number = binned_statistic_2d(x, y, z, statistic='mean', bins=[x_bins, y_bins])
-
-# Plot the result
-plt.imshow(mean_z.T, origin='lower', extent=[x_edge[0], x_edge[-1], y_edge[0], y_edge[-1]], cmap='seismic',aspect='auto',vmin=0.25,vmax=1.75)
-plt.colorbar(label='|dv/v|')
-plt.xlim(-0.6,0.6)
-plt.ylim(20,160)
-plt.xlabel('Log10(Ma)')
-plt.ylabel('Deflection Angle (degrees)')
-plt.axhline(y=90,color='k')
-plt.axvline(x=0,color='k')
-plt.show()
 
 
 
@@ -814,30 +1017,6 @@ plt.axvline(x=0,color='k')
 plt.show()
 # %%
 
-# dv/va dependence on Ma and deflection angle
-
-x = np.log10(allmachs) # x axis
-y = allangles # y axis
-z = alldvmag/allva # variable for colorbar
-
-# Define bins
-bins=40
-x_bins = np.linspace(-1, 1, bins)
-y_bins = np.linspace(0, 180, bins)
-
-# Calculate the mean of 'z' for each bin
-mean_z, x_edge, y_edge, bin_number = binned_statistic_2d(x, y, z, statistic='mean', bins=[x_bins, y_bins])
-
-# Plot the result
-plt.imshow(mean_z.T, origin='lower', extent=[x_edge[0], x_edge[-1], y_edge[0], y_edge[-1]], cmap='seismic',aspect='auto',vmin=0.25,vmax=1.75)
-plt.colorbar(label='|dv/va|')
-plt.xlim(-0.6,0.6)
-plt.ylim(20,160)
-plt.xlabel('Log10(Ma)')
-plt.ylabel('Deflection Angle (degrees)')
-plt.axhline(y=90,color='k')
-plt.axvline(x=0,color='k')
-plt.show()
 
 # %%
 
@@ -853,10 +1032,10 @@ plt.show()
 
 x = np.log10(allmachs) # x axis
 y = allangles # y axis
-z = allbetas # variable for colorbar
+z = alldSmag # variable for colorbar
 
 # Define bins
-bins=100
+bins=50
 x_bins = np.linspace(-1, 1, bins)
 y_bins = np.linspace(0, 180, bins)
 
@@ -864,9 +1043,9 @@ y_bins = np.linspace(0, 180, bins)
 mean_z, x_edge, y_edge, bin_number = binned_statistic_2d(x, y, z, statistic='mean', bins=[x_bins, y_bins])
 
 # Plot the result
-plt.imshow(mean_z.T, origin='lower', extent=[x_edge[0], x_edge[-1], y_edge[0], y_edge[-1]], cmap='plasma',aspect='auto',vmin=0.,vmax=1.0)
-plt.colorbar(label='Plasma Beta')
-plt.xlim(-0.6,0.6)
+plt.imshow(mean_z.T, origin='lower', extent=[x_edge[0], x_edge[-1], y_edge[0], y_edge[-1]], cmap='plasma',aspect='auto',vmin=0.,vmax=0.1)
+plt.colorbar(label='Kr')
+plt.xlim(-0.6,1)
 plt.ylim(20,160)
 plt.xlabel('Log10(Ma)')
 plt.ylabel('Deflection Angle (degrees)')
@@ -910,7 +1089,7 @@ ax[2].set_ylabel('Counts')
 #%%
 
 fig, ax = plt.subplots(1,1,figsize=(8,8))
-ax.hist2d(np.log10(allmachs),allSr,range=[[-0.5,0.5],[0,0.6]],bins=100,cmin=1,cmap='viridis')
+ax.hist2d(np.log10(allmachs),allSmags,range=[[-0.5,0.5],[0,0.6]],bins=100,cmin=1,cmap='viridis')
 ax.set_xlabel('Log10 Alfven Mach Number')
 ax.set_ylabel('Radial Poynting Flux (SI units W/m^2)')
 ax.set_facecolor('k')
@@ -921,7 +1100,7 @@ ax.set_xlim(-0.5,0.5)
 
 
 fig, ax = plt.subplots(1,1,figsize=(8,8))
-ax.hist2d(np.log10(allmachs),allKr,range=[[-0.5,0.5],[0,0.6]],bins=100,cmin=1,cmap='viridis')
+ax.hist2d(np.log10(allmachs),allKmags,range=[[-0.5,0.5],[0,0.6]],bins=100,cmin=1,cmap='viridis')
 ax.set_xlabel('Log10 Alfven Mach Number')
 ax.set_ylabel('Radial Kinetic Energy Flux (SI units W/m^2)')
 ax.set_facecolor('k')
@@ -929,7 +1108,28 @@ ax.axhline(y=90,color='w')
 ax.axvline(x=0,color='w')
 ax.set_xlim(-0.5,0.5)
 
+
+fig, ax = plt.subplots(1,1,figsize=(8,8))
+ax.hist2d(np.log10(allmachs),allHmags,range=[[-0.5,0.5],[0,0.6]],bins=100,cmin=1,cmap='viridis')
+ax.set_xlabel('Log10 Alfven Mach Number')
+ax.set_ylabel('Radial Kinetic Energy Flux (SI units W/m^2)')
+ax.set_facecolor('k')
+ax.axhline(y=90,color='w')
+ax.axvline(x=0,color='w')
+ax.set_xlim(-0.5,0.5)
+
+
+
 #%%
+
+fig, ax = plt.subplots(1,1,figsize=(8,8))
+ax.hist2d(np.log10(allmachs),allbetas,range=[[-0.5,0.5],[0,0.6]],bins=100,cmin=1,cmap='viridis')
+ax.set_xlabel('Log10 Alfven Mach Number')
+ax.set_ylabel('Beta')
+ax.set_facecolor('k')
+ax.axhline(y=90,color='w')
+ax.axvline(x=0,color='w')
+ax.set_xlim(-0.5,0.5)
 # %%
 
 

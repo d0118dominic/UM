@@ -192,8 +192,17 @@ def get_vxb(v,B):
 def get_K(m,n,v):
 	K = 0.5*m*n*v**3
 	return K
+
+# Needed to change get_H.  the Pressure tensor data product is expressed as a vector w 6 elements (not a tensor structure)
+# So Manually get the trace of the tensor.  
+# Simple version for now:  No v.P for now
 def get_H(v,P):
-	H = 0.5*v*np.trace(P) + np.dot(v,P)
+	traceP = P[0]+P[1]+P[2]
+	vdPx = v[0]*(P[0]+P[3]+P[4])
+	vdPy = v[1]*(P[1]+P[3]+P[5])
+	vdPz = v[2]*(P[2]+P[4]+P[5])
+	vdotP = np.array([vdPx,vdPy,vdPz])
+	H = 0.5*v*traceP + vdotP
 	return H
 def get_S(E,B):
 	S = np.cross(E,B)/mu0
@@ -378,26 +387,27 @@ near_alfs = [['2022-09-05/11:00','2022-09-05/17:00'], # 6 hrs Encounter 13
 
 # 
 more_near = []
-# Collecting super Alfvenic intervals in the Log(Ma) ~ 0-0.15 range (max 0.2)
+# Collecting near Alfvenic intervals in the |Log(Ma)| ~ 0-0.15 range (max 0.2)
 near_sups = [['2024-09-27/04:30','2024-09-27/06:30'], # 2 hr Encounter 21
 			 ['2024-10-03/23:00','2024-10-04/00:00'], # 1 hr Encounter 21
 			 ['2024-10-04/09:00','2024-10-04/10:00'], # 1 hr Encounter 21
 			 ['2024-06-29/04:45','2024-06-29/06:15'], # 1.5 hr Encounter 20
 			 ['2024-07-02/03:00','2024-07-02/08:00'], # 5 hr Encounter 20
 			 ['2024-03-28/03:30','2024-03-28/06:00'], # 2.5 hr Encounter 19
+			 ['2023-12-29/22:00','2023-12-30/03:00'], # 5 hrs Encounter 18
+			 ['2023-09-29/00:00','2023-09-29/06:00'], # 6 hrs Encounter 17
+			 ['2023-09-28/18:00','2023-09-28/21:00'], # 3 hrs Encounter 17
 			 ]
 
-near_subs = [['2024-09-27/04:30','2024-09-27/06:30'], # 2 hr Encounter 21
-			 ['2024-10-03/23:00','2024-10-04/00:00'], # 1 hr Encounter 21
-			 ['2024-10-04/09:00','2024-10-04/10:00'], # 1 hr Encounter 21
-			 ['2024-06-29/04:45','2024-06-29/06:15'], # 1.5 hr Encounter 20
-			 ['2024-07-02/03:00','2024-07-02/08:00'], # 5 hr Encounter 20
-			 ['2024-03-28/03:30','2024-03-28/06:00'], # 2.5 hr Encounter 19
+near_subs = [['2024-09-27/07:30','2024-09-27/8:30'], # 1 hr Encounter 21
+			 ['2024-09-30/23:00','2024-10-01/01:00'],# 2 hr Encounter 21
+			 ['2024-06-29/16:00','2024-06-29/21:00'],# 5 hr Encounter 20
+			 ['2024-03-30/07:00','2024-03-30/11:00'], # 4 hr Encounter 19
+			 ['2023-12-28/12:00','2023-12-28/15:00'], # 3 hrs Encounter 18
+			 ['2023-09-27/09:00','2023-09-29/18:00'], # ? hrs Encounter 17
 			 ]
-trange=near_sups[6]
 #sub_alfs =  ['2024-09-30/03:00','2024-09-30/11:00']
 # trange=sub_alfs[]
-# trange=more_sups[-1]
 
 # Alfven crossings (<2 hr)
 #trange = ['2021-11-21/21:00','2021-11-21/22:00']
@@ -416,14 +426,15 @@ trange=near_sups[6]
 # trange=['2023-12-28/00:00','2023-12-30/00:00'] # E18
 
 
-# trange = ['2018-11-05/00:00', '2018-11-05/03:00'] # Bale 2019 event (includes Sr)
+trange = ['2018-11-05/00:00', '2018-11-05/03:00'] # Bale 2019 event (includes Sr)
 # trange = near_alfs[0]
 ##trange = ['2024-12-24/00:00', '2024-12-25/00:00'] # E22 
 # trange = ['2025-03-22/00:00', '2025-03-23/00:00'] # E23
 # trange = ['2025-06-19/00:00', '2025-06-20/00:00'] # E24
 # 
 
-
+trange=sub_alfs[2]
+trange = ['2022-12-11/17:30','2022-12-11/18:30']
 #Need to make a list of chosen Alfvenic & sub-alfvenic intervals
 #Most people choose a handful of intervals by eye
 
@@ -525,6 +536,8 @@ for i in range(len(Bvecs)):
 	# E_antennas[i] = voltages[i]/3.5
 	S[i] = get_S(E_conv[i],Bvecs[i])
 	K[i] = get_K(mi,ni[i],vivecs[i])
+	# H[i] = get_H(vivecs[i],ni[i]*TiTensor[i])
+	H[i] = get_H(vxyz[i],ni[i]*TiTensor[i])
 
 	Tpar[i],Tperp[i],Ppar[i],Pperp[i] = get_parperps(ni[i],TiTensor[i],Bxyz[i])
 	
@@ -621,46 +634,20 @@ store_alldata()
 machplot()
 # quickplot()
 #betaplot()
+#%%
 fig,ax = plt.subplots(2,1,figsize=(10,5))
 ax[0].plot(np.log10(ma_mean))
 ax[0].axhline(y=0,color='k')
 ax[1].plot(angle)
 # %%
-
+fluxplot()
 # %%
-
-# %%
-
-# %%
-
-# %%
-
-# %%
-
-# %%
-
-# %%
-
-# %%
-
-# %%
-
-# %%
-
-# %%
-
-# %%
-
-# %%
-
-# %%
-
-# %%
-
-# %%
-
-# %%
-
+fig, ax = plt.subplots(2,1,figsize=(10,10))
+ax[0].plot(ma_mean)
+ax[0].plot(ma)
+ax[0].axhline(y=1,color='k',linestyle='dashed')
+ax[1].plot(angle)
+ax[1].axhline(y=90,color='k',linestyle='dashed')
 # %%
 
  #%%
