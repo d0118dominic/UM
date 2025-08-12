@@ -233,21 +233,23 @@ def get_deltascalar(var,var_mean):
 	dvar_norm = dvar/var_mean
 	return dvar,dvar_norm
 
-
+# Why are there so many different versions of cross helicity?  
 def get_crosshelicity(v,B,n,m): #vector v & B
-	z_plus = v + B/(n*m*mu0)
-	z_minus = v - B/(n*m*mu0)
+	z_plus = v + B/np.sqrt(n*m*mu0)
+	z_minus = v - B/np.sqrt(n*m*mu0)
 	term1 = np.linalg.norm(z_plus)**2 - np.linalg.norm(z_minus)**2
 	term2 = np.linalg.norm(z_plus)**2 + np.linalg.norm(z_minus)**2
 	sigma_c = term1/term2
 	return sigma_c
 
 #Somehow always = 1 (need to resolve)
-def get_residenergy(dv,dB): # vector dv & dB (Alfven units??)
-	term1 = np.linalg.norm(dv)**2 - np.linalg.norm(dB)**2
-	term2 = np.linalg.norm(dv)**2 + np.linalg.norm(dB)**2
+def get_residenergy(v,B,n,m): # vector dv & dB (Alfven units??)
+	# term1 = np.linalg.norm(dv)**2 - np.linalg.norm(dB)**2
+	# term2 = np.linalg.norm(dv)**2 + np.linalg.norm(dB)**2
+	term1 = np.linalg.norm(dv)**2 - np.linalg.norm(dB/np.sqrt(n*m*mu0))**2
+	term2 = np.linalg.norm(dv)**2 + np.linalg.norm(dB/np.sqrt(n*m*mu0))**2
 	sigma_r = term1/term2
-	return term1/term2
+	return sigma_r 
 
 
 def store_alldata():
@@ -607,7 +609,7 @@ for i in range(len(timeax)):
 
 	# dn
 	dn[i],dn_norm[i] = get_deltascalar(ni[i],n_mean[i])
-	sigma_r[i] = get_residenergy(dv[i],dB[i])
+	sigma_r[i] = get_residenergy(vivecs[i],Bvecs[i],ni[i],mi)
 	sigma_c[i] = get_crosshelicity(vivecs[i],Bvecs[i],ni[i],mi)
 	
 	dB_norm_mag[i] = np.linalg.norm(dB_norm[i]) # |dB|/|B| (scalar)
