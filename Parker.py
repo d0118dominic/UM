@@ -3,9 +3,10 @@ import pyspedas
 import numpy as np
 import matplotlib.pyplot as plt
 import pytplot
-from pytplot import get_data, store_data,timespan
-from pyspedas import tplot
+from pytplot import get_data, store_data,timespan,tplot_options
+from pyspedas import tplot,tplot_options
 from pyspedas import tinterpol
+import cdflib
 
 me = 9.1094e-31 #kg
 mi = 1837*me
@@ -53,6 +54,19 @@ def machplot():
 	pyspedas.options('velocities','legend_names',['|vi|','|va|'])
 	pyspedas.tplot(['Mach','position','velocities'])
 	return
+
+def Tempplot():
+	mach = np.zeros([len(timeax),2])
+	for i in range(len(timeax)):
+		mach[i] = [ma_mean[i],1]
+	store_data('Mach', data = {'x':timeax,'y':mach})
+	pyspedas.options('Tpar', 'ytitle', r'$T_\parallel$ (KeV)')
+	pyspedas.options('Tperp', 'ytitle', r'$T_\perp$ (KeV)')
+	pyspedas.options('Tparperp', 'ytitle', r'$T_\parallel/T_\perp$')
+	# pyspedas.ylim('Tpar',0,2)
+	pyspedas.ylim('Tparperp',0,2)
+	pyspedas.tplot([B_name,'Tparperp','Tpar','Tperp'])
+	return
 def fluxplot():
 	pyspedas.options(['S','K'], 'legend_names',['R','T','N'])
 	pyspedas.tplot(['S','K'])
@@ -65,21 +79,72 @@ def presplot():
 	pyspedas.tplot(['pressures','beta'])
 	return
 def angleplot():
+	char_size = 13
 	mach = np.zeros([len(timeax),2])
+	pos = np.zeros([len(timeax),2])
+	ang = np.zeros([len(timeax),2])
+	vels = np.zeros([len(timeax),2])
+
 	for i in range(len(timeax)):
 		mach[i] = [ma_mean[i],1]
+		pos[i] = [position[i],10]
+		ang[i] = [angle[i],90]
+		vels[i] = [1e-3*vmag_mean[i],1e-3*va_mean[i]]
+	position[-1] = position[-2]
 	store_data('Mach', data = {'x':timeax,'y':mach})
-	pyspedas.options('Mach', 'ytitle', 'Alfven Mach Number')
+	store_data('Position',data = {'x':timeax,'y':position})
+	store_data('Angle',data = {'x':timeax,'y':ang})
+	store_data('Bvecs_mean', data = {'x':timeax,'y':1e9*Bvecs_mean})
+	store_data('vvecs_mean', data = {'x':timeax,'y':1e-3*vivecs_mean})
+	store_data('vmag_mean', data = {'x':timeax,'y':1e-3*vmag_mean})
+	store_data('vmag', data = {'x':timeax,'y':1e-3*v_mag})
+	store_data('vels', data = {'x':timeax,'y':vels})
+	pyspedas.options('vels','ytitle', 'Velocities' + '\n [km/s]')
+	pyspedas.options('vels','color', ['k','r'])
+	pyspedas.options('vels','legend_names', [r'$\langle|v|\rangle$',r'$\langle v_a \rangle$'])
+	pyspedas.options('Bvecs_mean','legend_names', [r'$R$',r'$T$',r'$N$'])
+	pyspedas.options('vvecs_mean','legend_names', [r'$R$',r'$T$',r'$N$'])
+	pyspedas.options(B_name,'ytitle', r'$\vec{B}$' + '\n [nT]')
+	pyspedas.options('Bvecs_mean', 'ytitle', r'$\vec{\langle B\rangle}$' + '\n [nT]')
+	pyspedas.options('vvecs_mean', 'ytitle', r'$\vec{\langle v\rangle}$' + '\n [km/s]')
+	pyspedas.options('vmag_mean', 'ytitle', r'$\langle |v| \rangle$' + '\n [km/s]')
+	pyspedas.options('Mach', 'ytitle', r'$M_a$')
 	pyspedas.options('Mach', 'ylog', 1)
 	pyspedas.options('Mach', 'linestyle', ['-','--'])
 	pyspedas.options('Mach', 'color', ['k','r'])
-	pyspedas.ylim('Mach',0.1,10)
-	pyspedas.options('angle','ytitle','Deflection Angle (degrees)')
-	pyspedas.tplot(['Mach','angle','dB_norm'])
+	pyspedas.options('Position', 'linestyle', ['-','--'])
+	pyspedas.options('Position', 'color', ['k','r'])
+	pyspedas.options('Angle', 'linestyle', ['-','--'])
+	pyspedas.options('Angle', 'color', ['k','r'])
+	pyspedas.ylim('Mach',0.3,3)
+	pyspedas.ylim('Bvecs_mean',-1000,2500)
+	pyspedas.ylim('vvecs_mean',-200,500)
+	pyspedas.ylim('Angle',0,120)
+	pyspedas.ylim('vels',0,1000)
+	pyspedas.ylim('Position',30,50)
+	pyspedas.options('Angle','ytitle',r'$\theta$'+'\n [degrees]')
+	pyspedas.options('Position','ytitle',r'$R/R_{sun}$')
+	tplot_options('axis_font_size',17)
+	tplot_options('charsize',13)
+	tplot_options('aspect',13)
+	pyspedas.options(['Position','Mach','Angle','Bvecs_mean','vvecs_mean','vels'],'char_size',17)
+	pyspedas.tplot(['Position','Bvecs_mean','vvecs_mean','Mach','Angle'])
 def betaplot():
-	pyspedas.options('beta', 'color',['k','k'])
+	bpar = np.zeros([len(timeax),2])
+	ang = np.zeros([len(timeax),2])
+	Tratio = np.zeros([len(timeax),2])
+	for i in range(len(timeax)):
+		bpar[i] = [beta_par[i],1]
+		ang[i] = [angle[i],90]
+		Tratio[i] = [abs(Tperp[i]/Tpar[i]),1]
+	store_data('Angle',data = {'x':timeax,'y':ang})
+	store_data('Position',data = {'x':timeax,'y':position})
+	store_data('bpar',data={'x':timeax,'y':bpar})
+	store_data('Tratio',data={'x':timeax,'y':Tratio})
+	pyspedas.options('bpar', 'color',['k','k'])
+	pyspedas.ylim('bpar',0,12)
 	pyspedas.options('beta', 'linestyle',['-','--'])
-	pyspedas.tplot('beta')
+	pyspedas.tplot([B_name,'Position','Tratio','bpar','Angle'])
 def duration(trange):
 	from datetime import datetime as dt
 	start = dt.strptime(trange[0], '%Y-%m-%d/%H:%M')
@@ -103,6 +168,16 @@ def filter_angle(angle,floor,ceiling):
 	for i in range(len(timeax)): 
 		if (angle[i] < floor or angle[i]>ceiling): angle_reduced[i] = np.nan
 	return angle_reduced
+
+
+def FOV_filter():
+	upper = phis[0,1]
+	lower = phis[0,-2]
+
+	peak_phi = phis[np.arange(len(timeax)),np.argmax(ephi,axis=0)]
+	mask = (peak_phi>=upper) | (peak_phi<=lower)
+	Ti[mask],Tpar[mask],Tperp[mask] = np.nan,np.nan,np.nan
+	return 
 
 def bin_swvel(vel):
 	vel_binned = vel
@@ -174,8 +249,8 @@ def get_parperps(n,T,B):  #B ant T tensor coord systems need to match for this
 	term2 = 2*(T[3]*B[0]*B[1] + T[4]*B[0]*B[2] + T[5]*B[1]*B[2])/(np.linalg.norm(B)**2)
 	Tpar = term1+term2
 	Tperp=0.5*(trace-Tpar)
-	Ppar = n*kb*Tpar
-	Pperp = n*kb*Tperp
+	Ppar = n*Tpar
+	Pperp = n*Tperp
 	return Tpar,Tperp,Ppar,Pperp
 
 
@@ -214,13 +289,56 @@ def get_mean(var,int):   #Take a timeseries and compute the mean (basically smoo
 	smoothed_var = np.convolve(var,box,mode='same')
 	return smoothed_var
 
-def get_vecmean(vec,int):   # Vector mean
-	vec1_mean = get_mean(vec[:,0],minutes*meaninterval)
-	vec2_mean = get_mean(vec[:,1],minutes*meaninterval)
-	vec3_mean = get_mean(vec[:,2],minutes*meaninterval)
+
+def get_mean(var, int):
+    """Take a timeseries and compute the mean (basically smooth out small flucs over some interval)
+    Handles NaN values by computing local averages only from valid data points.
+    """
+    import numpy as np
+    from scipy.ndimage import uniform_filter1d
+    
+    # Create a copy to avoid modifying original
+    var_copy = np.array(var, dtype=float)
+    
+    # Create mask for valid (non-NaN) values
+    valid_mask = ~np.isnan(var_copy)
+    
+    # Replace NaNs with 0 for convolution
+    var_filled = np.where(valid_mask, var_copy, 0)
+    
+    # Convolve the data and the mask
+    box = np.ones(int) / int
+    smoothed_sum = np.convolve(var_filled, box, mode='same')
+    smoothed_count = np.convolve(valid_mask.astype(float), box, mode='same')
+    
+    # Divide by actual count of valid points in each window
+    # Avoid division by zero
+    smoothed_var = np.where(smoothed_count > 0, smoothed_sum / smoothed_count, np.nan)
+    
+    return smoothed_var
+
+
+def get_med(var,int):
+	from scipy import ndimage
+	return ndimage.median_filter(var, size=int, mode='nearest')
+
+def get_vecmean(vec,interval):   # Vector mean
+	vec1_mean = get_mean(vec[:,0],interval)
+	vec2_mean = get_mean(vec[:,1],interval)
+	vec3_mean = get_mean(vec[:,2],interval)
 	vec_mean = np.zeros_like(vec)
 	for i in range(len(vec_mean)): vec_mean[i] = np.array([vec1_mean[i],vec2_mean[i],vec3_mean[i]])
 	return vec_mean
+
+
+def get_vecmed(vec,int):   # Vector mean
+	vec1_mean = get_med(vec[:,0],minutes*meaninterval)
+	vec2_mean = get_med(vec[:,1],minutes*meaninterval)
+	vec3_mean = get_med(vec[:,2],minutes*meaninterval)
+	vec_mean = np.zeros_like(vec)
+	for i in range(len(vec_mean)): vec_mean[i] = np.array([vec1_mean[i],vec2_mean[i],vec3_mean[i]])
+	return vec_mean
+
 
 def get_delta(vec,vec_mean):
 	dvec = vec - vec_mean
@@ -253,6 +371,9 @@ def get_residenergy(v,B,n,m): # vector dv & dB (Alfven units??)
 
 
 def store_alldata():
+
+	store_data('Bvecs_mean', data = {'x':timeax,'y':1e9*Bvecs_mean})
+	store_data('vmag_mean', data = {'x':timeax,'y':1e-3*vmag_mean})
 	#--------------------------------------------------------------------------------------
 	# Energy Fluxes.  This is still shaky, as it assumes E = -vxB then uses that E for ExB
 	# In principle, B x (-vxB) = 0 by definition, so idk why it becomes a non-zero signal
@@ -306,7 +427,11 @@ def store_alldata():
 	# ----Ion moments-----
 	store_data('vi', data = {'x':timeax,'y':vivecs})
 	store_data('n', data = {'x':timeax,'y':ni})
-	store_data('T', data = {'x':timeax,'y':Ti})
+	store_data('T', data = {'x':timeax,'y':Ti/1.602e-19})
+	store_data('Tpar', data = {'x':timeax,'y':Tpar/1.602e-19})
+	store_data('Tperp', data = {'x':timeax,'y':Tperp/1.602e-19})
+	store_data('Tparperp', data = {'x':timeax,'y':Tpar/Tperp})
+
 	#----------------------
 
 	store_data('velocities', data = {'x':timeax,'y':viandva})
@@ -353,7 +478,7 @@ def store_alldata():
 
 sub_alfs =  [['2022-09-06/06:00','2022-09-06/16:00'], # 10 hrs Encounter 13
 			 ['2022-09-06/18:00','2022-09-07/12:00'], # 18 hrs Encounter 13
-			 ['2022-12-11/00:00','2022-12-11/18:00'], # 18 hrs Encounter 14
+			 ['2022-12-11/04:00','2022-12-11/16:00'], # 12 hrs Encounter 14
 			 ['2023-03-16/12:00','2023-03-17/06:00'], # 18 hrs Encounter 15
 			 ['2023-06-20/01:00','2023-06-21/01:00'], # 24 hrs Encounter 16
 			 ['2023-09-27/06:00','2023-09-27/15:00'], # 9 hrs Encounter 17
@@ -361,6 +486,8 @@ sub_alfs =  [['2022-09-06/06:00','2022-09-06/16:00'], # 10 hrs Encounter 13
 			 ['2024-03-29/06:00','2024-03-29/21:00'], # 15 hrs Encounter 19
 			 ['2024-06-30/03:00','2024-06-30/18:00'], # 15 hrs Encounter 20
 			 ['2024-09-28/11:00','2024-09-28/18:00'], # 7 hrs Encounter 21
+ 		     ['2024-12-24/00:00', '2024-12-25/00:00'], # 24 hours Encounter 22 
+	         ['2025-03-22/06:00', '2025-03-23/12:00'] # 30 hrs Encounter 23
 			 ]
 
 
@@ -368,16 +495,17 @@ sup_alfs=	[['2022-09-07/18:00','2022-09-08/18:00'], # 24 hrs Encounter 13
 			 ['2022-12-10/01:00','2022-12-10/09:00'], # 8 hrs Encounter 14
 			 ['2023-03-16/00:00','2023-03-16/11:00'], # 11 hrs Encounter 15
 			 ['2023-06-24/00:00','2023-06-25/00:00'], # 24  hrs Encounter 16
-			 ['2023-09-30/00:00','2023-09-30/09:00'], # 9 hrs Encounter 17
+			 ['2023-09-28/20:00','2023-09-30/09:00'], # 37 hrs Encounter 17
 			 ['2023-12-25/14:00','2023-12-25/23:00'], # 9 hrs Encounter 18
 			 ['2024-04-01/10:00','2024-04-02/01:00'], # 15 hrs Encounter 19
 			 ['2024-07-01/20:00','2024-07-03/00:00'], # 28 hrs Encounter 20
 			 ['2024-10-03/00:00','2024-10-03/12:00'], # 12 hrs Encounter 21
+			 ['2025-03-21/00:00', '2025-03-22/03:00'], # 27 hrs Encounter 23
 			 ]
 
 
 #May need to re-think the definition of near-alfs.  May artificially produce many >90 deflections
-near_alfs = [['2022-09-05/11:00','2022-09-05/17:00'], # 6 hrs Encounter 13
+near_alfs_old = [['2022-09-05/11:00','2022-09-05/17:00'], # 6 hrs Encounter 13
 			 ['2023-06-23/00:00','2023-06-23/18:00'], # 18 hrs Encounter 16
 			 ['2023-09-28/09:00','2023-09-28/18:00'], # 9 hrs Encounter 17
 			 ['2023-12-28/00:00','2023-12-29/00:00'], # 24 hrs Encounter 18
@@ -387,9 +515,24 @@ near_alfs = [['2022-09-05/11:00','2022-09-05/17:00'], # 6 hrs Encounter 13
 ]
 
 
+near_alfs = [['2022-09-05/11:00','2022-09-05/17:00'], # 6 hrs Encounter 13
+			 ['2023-09-28/09:00','2023-09-28/18:00'], # 9 hrs Encounter 17
+			 ['2023-12-27/06:00','2023-12-28/00:00'], # 18 hrs Encounter 18 (done)
+			 ['2024-03-28/22:00','2024-03-29/03:00'], # 7 hrs Encounter 19
+			 ['2024-06-29/00:00','2024-06-29/09:00'], # 9 hrs Encounter 20 
+			 ['2024-09-30/13:00','2024-10-01/00:00'], # 9 hrs Encounter 21 
+]
+
+new_near_sups = [
+]
+
+
+
 # 
 more_near = []
 # Collecting near Alfvenic intervals in the |Log(Ma)| ~ 0-0.15 range (max 0.2)
+
+
 near_sups = [['2024-09-27/04:30','2024-09-27/06:30'], # 2 hr Encounter 21
 			 ['2024-10-03/23:00','2024-10-04/00:00'], # 1 hr Encounter 21
 			 ['2024-10-04/09:00','2024-10-04/10:00'], # 1 hr Encounter 21
@@ -408,6 +551,20 @@ near_subs = [['2024-09-27/07:30','2024-09-27/8:30'], # 1 hr Encounter 21
 			 ['2023-12-28/12:00','2023-12-28/15:00'], # 3 hrs Encounter 18
 			 ['2023-09-27/09:00','2023-09-29/18:00'], # ? hrs Encounter 17
 			 ]
+
+
+sup_alfs_alt=[['2022-09-07/18:00','2022-09-08/18:00'], # 24 hrs Encounter 13
+			 ['2022-12-10/01:00','2022-12-10/09:00'], # 8 hrs Encounter 14
+			 ['2023-03-16/06:00','2023-03-16/11:00'], # 5 hrs Encounter 15
+			 ['2023-06-24/09:00','2023-06-25/00:00'], # 15  hrs Encounter 16
+			 ['2023-09-28/20:00','2023-09-30/09:00'], # 37 hrs Encounter 17
+			 ['2023-12-25/14:00','2023-12-25/23:00'], # 9 hrs Encounter 18
+			 ['2024-04-01/10:00','2024-04-02/01:00'], # 15 hrs Encounter 19
+			 ['2024-07-02/03:00','2024-07-03/00:00'], # 21 hrs Encounter 20
+			 ['2024-10-03/00:00','2024-10-03/12:00'], # 12 hrs Encounter 21
+			 ['2025-03-21/00:00', '2025-03-22/00:00'], # 27 hrs Encounter 23
+			 ]
+
 #sub_alfs =  ['2024-09-30/03:00','2024-09-30/11:00']
 # trange=sub_alfs[]
 
@@ -420,7 +577,7 @@ near_subs = [['2024-09-27/07:30','2024-09-27/8:30'], # 1 hr Encounter 21
 # trange = ['2024-09-28/00:00', '2024-10-05/12:00'] # E21 
 
 
-#trange = ['2021-08-12/00:30', '2021-08-12/02:30'] # Soni 2024 Parker interval
+trange = ['2021-08-12/00:30', '2021-08-12/02:30'] # Soni 2024 Parker interval
 #trange = ['2022-09-04/00:00','2022-09-04/12:00'] 
 #trange = ['2024-09-28/00:00', '2024-10-05/12:00'] # E21 
 # trange = ['2024-06-29/00:00', '2024-07-01/12:00'] # E20
@@ -428,27 +585,59 @@ near_subs = [['2024-09-27/07:30','2024-09-27/8:30'], # 1 hr Encounter 21
 # trange=['2023-12-28/00:00','2023-12-30/00:00'] # E18
 
 
-trange = ['2018-11-05/00:00', '2018-11-05/03:00'] # Bale 2019 event (includes Sr)
+#trange = ['2018-11-05/00:00', '2018-11-05/03:00'] # Bale 2019 event (includes Sr)
 # trange = near_alfs[0]
-##trange = ['2024-12-24/00:00', '2024-12-25/00:00'] # E22 
-# trange = ['2025-03-22/00:00', '2025-03-23/00:00'] # E23
+#trange = ['2024-12-22/00:00', '2024-12-22/12:00'] # E22 
+#trange = ['2025-03-21/10:00', '2025-03-21/14:00'] # E23
 # trange = ['2025-06-19/00:00', '2025-06-20/00:00'] # E24
-# 
+#trange = ['2021-04-26/00:00', '2021-05-02/00:00'] 
+#t#range = ['2023-06-20/00:00','2023-06-23/00:00']
 
-trange=sub_alfs[2]
-trange = ['2022-12-11/17:30','2022-12-11/18:30']
+
+# Intervals with some beta_par>1
+trange = ['2024-03-25/04:00','2024-03-25/09:00'] #Enc 19
+trange = ['2024-07-04/22:00','2024-07-05/00:00'] #Enc 20 #HCS just before 
+trange = ['2024-09-25/06:00','2024-09-26/06:00'] #Enc 21
+trange = ['2024-12-19/00:00', '2024-12-20/00:00'] #Enc 22
+trange = ['2025-03-27/00:00', '2025-03-28/00:00'] # Maybe
+trange = ['2023-06-24/00:00','2023-06-24/12:00'] # Maybe
+
+betaparlist = [['2024-03-25/04:00','2024-03-25/09:00'],
+			   ['2024-07-04/22:00','2024-07-05/00:00'],
+			   ['2024-09-25/06:00','2024-09-26/06:00'],
+			#    ['2024-09-25/06:00','2024-09-26/12:00'],
+			   ['2024-12-19/00:00', '2024-12-20/00:00'],
+			   ['2025-03-18/00:00', '2025-03-19/00:00'],
+			   ['2025-03-17/00:00', '2025-03-17/12:00'],
+			   ['2023-12-23/12:00','2023-12-24/12:00']]
+
+# trange=sup_alfs_alt[3]
+# trange = ['2024-07-04/21:00','2024-07-05/00:00'] #Enc20 #Maybe brief HCS
 #Need to make a list of chosen Alfvenic & sub-alfvenic intervals
 #Most people choose a handful of intervals by eye
+# trange=sup_alfs[9]
+trange = ['2022-09-03/00:00','2022-09-10/00:00']
+trange = ['2023-09-28/09:00','2023-09-28/18:00']
+trange = betaparlist[2]
+trange=['2022-09-05/00:00','2022-09-05/12:00']
 
+# longints = [['2025-06-15/00:00','2025-06-23/00:00'],['2025-03-18/00:00','2025-03-27/00:00']]
 Bfld_vars = pyspedas.projects.psp.fields(trange=trange, level='l2', time_clip=True)
-spi_vars = pyspedas.projects.psp.spi(trange=trange,level='l3',time_clip=True)
-# spe_vars = pyspedas.projects.psp.spi(trange=trange,level='l3',time_clip=True)
+spi_vars = pyspedas.projects.psp.spi(trange=trange,level='l3',time_clip=True,get_support_data=True)
 # spe_vars = pyspedas.projects.psp.spe(trange=trange,level='l2',time_clip=True)
+
+# qtn_vars = pyspedas.projects.psp.fields(trange=trange,level='l3',datatype='sqtn_rfs_V1V2',time_clip=True)
+
+# spe_vars = pyspedas.projects.psp.spi(trange=trange,level='l3',time_clip=True)
+#spe_vars = pyspedas.projects.psp.spe(trange=trange,level='l2',datatype='sqtn_rfs_V1V2',time_clip=True)
 
 #voltages_vars = pyspedas.projects.psp.fields(trange=trange, datatype='dfb_wf_dvdc', level='l2',time_clip=True)
 #On DC datatype: 'sqn_rfs_V1V2 has some kind of electron density & core temp, but looks weird
 # spc_vars = pyspedas.projects.psp.spc(trange=trange, datatype='l2', level='l2')
 ##%%1G
+
+
+
 # Reform all data to simple arrays and convert to SI units 
 B_name = 'psp_fld_l2_mag_RTN'
 vi_name = 'psp_spi_VEL_RTN_SUN'
@@ -456,13 +645,29 @@ Bxyz_name = 'psp_spi_MAGF_INST'
 vxyz_name = 'psp_spi_VEL_INST'
 TiTensor_name = 'psp_spi_T_TENSOR_INST'
 Ti_name = 'psp_spi_TEMP'
+phivals_name = 'psp_spi_PHI_VALS'
+ephi_name = 'psp_spi_EFLUX_VS_PHI'
 ni_name = 'psp_spi_DENS'
+# ni_name = 'electron_density'
 # voltages_name = 'psp_fld_l2_dfb_wf_dVdc_sc'
 position_name = 'psp_spi_SUN_DIST'
 
 interpvar_name = vi_name
 timeax = pytplot.get_data(interpvar_name).times
 meaninterval = mean_int(timeax,trange)
+
+
+for name in [B_name, Bxyz_name, vxyz_name, vi_name, Ti_name, ni_name, TiTensor_name, position_name]:
+    data = pytplot.get_data(name)
+    if data is None:
+        print(f"WARNING: no data found for {name}")
+        continue
+    times = data.times
+    _, unique_idx = np.unique(times, return_index=True)
+    if len(unique_idx) < len(times):
+        print(f"Removing {len(times)-len(unique_idx)} duplicate timestamps from {name}")
+        pytplot.store_data(name, data={'x': times[unique_idx], 'y': data.y[unique_idx]})
+
 
 tinterpol(B_name,interpvar_name,newname='B')
 tinterpol(Bxyz_name,interpvar_name,newname='Bxyz')
@@ -471,6 +676,8 @@ tinterpol(vi_name,interpvar_name,newname='vi')
 tinterpol(Ti_name,interpvar_name,newname='Ti')
 tinterpol(ni_name,interpvar_name,newname='ni')
 tinterpol(TiTensor_name,interpvar_name,newname='TiTensor')
+tinterpol(phivals_name,interpvar_name,newname='phivals')
+tinterpol(ephi_name,interpvar_name,newname='ephi')
 # tinterpol(voltages_name,interpvar_name,newname='voltages')
 tinterpol(position_name,interpvar_name,newname='position')
 ##%%
@@ -481,6 +688,8 @@ vivecs = 1e3*reform(pytplot.get_data('vi'))
 ni = 1e6*reform(pytplot.get_data('ni'))
 Ti = 1.602e-19*reform(pytplot.get_data('Ti'))
 TiTensor = 1.602e-19*reform(pytplot.get_data('TiTensor'))
+phis = reform(pytplot.get_data('phivals'))
+ephi = reform(pytplot.get_data('ephi')).T
 #Ti = reform(pytplot.get_data('Ti'))/kb # Kelvin Units
 #TiTensor = reform(pytplot.get_data('TiTensor'))/kb # Kelvin Units
 # voltages = reform(get_data('voltages'))
@@ -507,6 +716,7 @@ ExB = np.zeros_like(Bvecs)
 
 P_mag = np.zeros_like(Br_norm)
 P_th = np.zeros_like(ni)
+beta_par = np.zeros_like(ni)
 
 va = np.zeros_like(Br_norm)
 vth = np.zeros_like(Br_norm)
@@ -556,19 +766,39 @@ for i in range(len(Bvecs)):
 	viandva[i] = [np.linalg.norm(vivecs[i]),va[i]]
 	pressures[i] = [P_mag[i] + P_th[i],P_mag[i],P_th[i]]
 	parperps[i] = [Ppar[i], Pperp[i]]
+	beta_par[i] = Ppar[i]/P_mag[i]
+
+
+# FOV filtering
+FOV_filter()
+
+
 
 ##%%
 # Get averaged quantities.  meaninterval = 1 min ##
-minutes = 10
+minutes = 60
 
+# Means
 Bvecs_mean = get_vecmean(Bvecs,minutes*meaninterval)
 vivecs_mean = get_vecmean(vivecs,minutes*meaninterval)
 Bmag_mean = get_mean(B_mag,minutes*meaninterval)
 vmag_mean = get_mean(v_mag,minutes*meaninterval)
 n_mean = get_mean(ni,minutes*meaninterval)
 va_mean = Bmag_mean/np.sqrt(mu0*mi*n_mean)
+# va_mean = Bmag_mean/np.sqrt(mu0*mi*ni)
 ma_mean = vmag_mean/va_mean
 beta_mean = get_mean(beta[:,0], minutes*meaninterval)
+
+
+# Medians
+# Bvecs_mean = get_vecmed(Bvecs,minutes*meaninterval)
+# vivecs_mean = get_vecmed(vivecs,minutes*meaninterval)
+# Bmag_mean = get_med(B_mag,minutes*meaninterval)
+# vmag_mean = get_med(v_mag,minutes*meaninterval)
+# n_mean = get_med(ni,minutes*meaninterval)
+# va_mean = Bmag_mean/np.sqrt(mu0*mi*n_mean)
+# ma_mean = vmag_mean/va_mean
+# beta_mean = get_med(beta[:,0], minutes*meaninterval)
 
 # Get dB,dv + components, etc. and vB alignment variable (proxy for alfvenicity)
 dB,dB_norm = np.zeros_like(Bvecs),np.zeros_like(Bvecs)
@@ -631,9 +861,17 @@ for i in range(len(timeax)): angle[i] = get_angle(Bvecs[i],Bvecs_mean[i])
 angle_reduced = filter_angle(angle,low,high) #If you want all angles, do 0,180
 angle=angle_reduced
 
+
+
+
+
+spi_vars
+
 # Make Tplot variables
 store_alldata()
-machplot()
+# betaplot()
+# angleplot()
+# angleplot()
 # quickplot()
 #betaplot()
 #%%
@@ -753,7 +991,6 @@ plt.show()
 # # %%
 
 # %%
-
 
 
 
