@@ -13,7 +13,7 @@ import cdflib
 
 me = 9.1094e-31 #kg
 mi = 1837*me
-mu0 = 1.2566370e-06  #;m kg / C^2
+mu0 = 1.2566370e-06  #;m kg / C^s
 eps0 = 8.85e-12   # C^2/Nm^2
 
 e = 1.602e-19 #C
@@ -118,6 +118,15 @@ def FOV_filter():
 	mask = (peak_phi>=upper) | (peak_phi<=lower)
 	Ti[mask],Tpar[mask],Tperp[mask] = np.nan,np.nan,np.nan
 	return 
+
+# def FOV_flagged():
+# 	upper = phis[0,1]
+# 	lower = phis[0,-2]
+# 	peak_phi = phis[np.arange(len(timeax)),np.argmax(ephi,axis=0)]
+# 	mask = (peak_phi>=upper) | (peak_phi<=lower)
+# 	Ti[mask],Tpar[mask],Tperp[mask] = np.nan,np.nan,np.nan
+# 	return peak_phi,upper,lower
+
 
 ##### Untested ####
 def filter_winds(var,sigma_threshold,v_threshold):
@@ -240,6 +249,23 @@ def get_parperps(n,T,B):  #B ant T tensor coord systems need to match for this
 	Ppar = n*Tpar
 	Pperp = n*Tperp
 	return Tpar,Tperp,Ppar,Pperp
+
+#Alt version to get rid of Tyy
+# def get_parperps(n,T,B):  #B ant T tensor coord systems need to match for this
+
+# 	theta = np.arccos(B[2]/np.linalg.norm(B))
+# 	Tperp = T[2] + (T[0]-T[2])/(1-B[0]**2 * np.tan(theta)**2)
+# 	Tpar = Tperp + (T[0]-T[2])/(B[0]**2 * np.sin(theta)**2 - np.cos(theta)**2)
+# 	trace = T[0] + T[1] + T[2]
+# 	# bad_inds = np.where((Tpar < np.nanpercentile([T[0],T[2]],5)) | (Tpar > np.nanpercentile([T[0],T[2]],99)))
+# 	Ppar = n*Tpar
+# 	Pperp = n*Tperp
+# 	return Tpar,Tperp,Ppar,Pperp
+
+
+
+
+
 def get_par(v1,v2):   # Get magnitude of parallel component 
 	par = np.dot(v1,v2)/np.linalg.norm(v2)
 	return abs(par)
@@ -346,7 +372,7 @@ sub_alfs =  [['2022-09-06/06:00','2022-09-06/16:00'], # 10 hrs Encounter 13
 			 ['2024-06-30/03:00','2024-06-30/18:00'], # 15 hrs Encounter 20
 			 ['2024-09-28/11:00','2024-09-28/18:00'], # 7 hrs Encounter 21
  		     ['2024-12-24/00:00', '2024-12-25/00:00'], # 24 hours Encounter 22 
-	         ['2025-03-22/06:00', '2025-03-23/12:00'] # 30 hrs Encounter 23
+	         ['2025-03-22/06:00', '2025-03-23/12:00'], # 30 hrs Encounter 23
 			 ]
 
 
@@ -400,7 +426,9 @@ encounter13 = [['2022-09-03/00:00','2022-09-03/01:00'],['2022-09-03/02:00','2022
 # encounter13 = [['2022-09-01/00:00','2022-09-11/00:00'],['2022-09-03/00:00','2022-09-03/01:00']]
 
 encounter24 = [['2025-06-17/00:00', '2025-06-21/00:00'], ['2025-06-21/00:00', '2025-06-21/01:00']]
-
+enc23coronalhole = [['2025-03-22/20:10','2025-03-23/09:20']] # Encounter 21
+# enc23coronalhole_reduced = [['2025-03-23/00:00','2025-03-23/09:20']] # Encounter 21
+# enc23 = [['2025-03-18/20:10','2025-03-25/00:20']] # Encounter 23
 
 # near_sups = [['2024-09-27/04:30','2024-09-27/06:30'], # 2 hr Encounter 21
 # 			 ['2024-10-03/23:00','2024-10-04/00:00'], # 1 hr Encounter 21
@@ -451,8 +479,8 @@ encounter24 = [['2025-06-17/00:00', '2025-06-21/00:00'], ['2025-06-21/00:00', '2
 # eventlist = sup_alfs+sub_alfs+near_alfs
 # eventlist = sup_alfs_alt#+sub_alfs
 eventlist = sup_alfs_alt+sub_alfs+near_alfs+betaparlist
-# eventlist = sub_alfs
-eventlist = encounter24
+eventlist = enc23coronalhole
+# eventlist = encounter24
 # eventlist = sup_alfs_alt[0:2]
 
 # Sup-alfs with the large beta_par instability
@@ -678,9 +706,9 @@ for i in range(len(eventlist)):
 
 
 	# FOV filtering
-	FOV_filter()
+	# FOV_filter()
 
-
+	# FOV_flagged()
 
  #------------------------------------------------------------------------
 	# Get averaged (or median) quantities.  meaninterval = 1 min ##
@@ -942,7 +970,7 @@ for i in range(len(eventlist)):
 
 # %%
 
-
+allmagperpart = 6.242e18*(allBmags**2)/(2*mu0*alln)
 
 #%%
 

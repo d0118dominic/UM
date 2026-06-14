@@ -17,6 +17,11 @@ Z = 1 # 1 for H+, 2 for He2+
 gamma = 5/3
 kb = 1.380649e-23
 
+import pyspedas
+from pyspedas import tplot
+mfi_vars = pyspedas.projects.wind.mfi(trange=['2013-11-5', '2013-11-6'])
+tplot('BGSE')
+
 #%%
 
 
@@ -108,7 +113,7 @@ def filter_deflections(var,threshold):
 # highest time resolutions for swe instrument: 92s (ions) & 6-12 s (electrons) 
 # Assuming solar wind velocity of 400 km/s, this corresponds to structure sizes of 6 & 0.4-0.8 Re
 
-trange=['2019-01-01/00:00', '2019-01-10/00:00']
+trange=['2019-01-01/00:00', '2019-01-30/00:00']
 # trange=['2019-01-20/00:00', '2019-01-30/00:00']
 swe_vars = pyspedas.projects.wind.swe(trange=trange)
 mfi_vars = pyspedas.projects.wind.mfi(trange=trange)
@@ -464,8 +469,9 @@ Re = 6378.14 #km
 v_sw = 400 #km/s
 v = v_sw*(60/Re)
 
-d_windows=np.array([4,100,200,300,400,500,600,700,800,900,1000]) # Re
-d_windows=np.array([4,50,100,150,200,250,300,350,400,450,500]) # Re
+# d_windows=np.array([4,100,200,300,400,500,600,700,800,900,1000]) # Re
+d_windows=np.array([4,10,100,1000]) # Re
+# d_windows=np.array([4,50,100,150,200,250,300,350,400,450,500]) # Re
 t_windows = []
 for i in d_windows: t_windows.append(int(np.round(i/v)))
 t_windows = np.array(t_windows)
@@ -535,6 +541,7 @@ plt.bar(bins, dvmag_count, width=bin_width, edgecolor='black', align='edge',alph
 plt.xlabel(r'Scale Size $(R_e)$')
 plt.ylabel('Count')
 plt.yscale('log')
+plt.xscale('linear')
 plt.legend()
 
 

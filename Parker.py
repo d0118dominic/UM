@@ -179,6 +179,15 @@ def FOV_filter():
 	Ti[mask],Tpar[mask],Tperp[mask] = np.nan,np.nan,np.nan
 	return 
 
+def FOV_flag():
+	upper = phis[0,1]
+	lower = phis[0,-2]
+
+	peak_phi = phis[np.arange(len(timeax)),np.argmax(ephi,axis=0)]
+	mask = (peak_phi<upper) & (peak_phi>lower)
+	Ti[mask],Tpar[mask],Tperp[mask] = np.nan,np.nan,np.nan
+	return 
+
 def bin_swvel(vel):
 	vel_binned = vel
 	for i in range(len(timeax)):
@@ -620,7 +629,7 @@ trange = ['2022-09-03/00:00','2022-09-10/00:00']
 trange = ['2023-09-28/09:00','2023-09-28/18:00']
 trange = betaparlist[2]
 trange=['2022-09-05/00:00','2022-09-05/12:00']
-
+# trange=['2025-03-23/00:00','2025-03-24/00:00']
 # longints = [['2025-06-15/00:00','2025-06-23/00:00'],['2025-03-18/00:00','2025-03-27/00:00']]
 Bfld_vars = pyspedas.projects.psp.fields(trange=trange, level='l2', time_clip=True)
 spi_vars = pyspedas.projects.psp.spi(trange=trange,level='l3',time_clip=True,get_support_data=True)
@@ -770,7 +779,7 @@ for i in range(len(Bvecs)):
 
 
 # FOV filtering
-FOV_filter()
+# FOV_flag()
 
 
 

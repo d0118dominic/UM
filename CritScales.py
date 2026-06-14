@@ -62,7 +62,7 @@ def colorplot(x,y,z):
     ax.set_ylabel(str(y))
     return fig, ax
 
-q = e
+q = constants.e
 mu_0 = mu0
 n = 1e6*10 #m^-3
 m = mi 

@@ -34,14 +34,6 @@ def reform(var):
 		newvar[i] = var[1][i]
 	return newvar
 
-def get_delta(vec,vec_mean):
-	dvec = vec - vec_mean
-	dvec_norm = dvec/np.linalg.norm(vec_mean)
-	return dvec,dvec_norm
-def get_deltascalar(var,var_mean):
-	dvar = var - var_mean
-	dvar_norm = dvar/var_mean
-	return dvar,dvar_norm
 
 def stability_condition(betapar, a, b, beta0):
 	denom = (betapar - beta0)**b
@@ -163,10 +155,10 @@ def get_residenergy(v,B,n,m): # vector dv & dB (Alfven units??)
 #%%
 
 
-ev1 = ['2025-03-28/19:30', '2025-04-03/14:50'] #Full interval
-ev1_reduced = ['2025-03-28/19:30', '2025-04-01/00:00'] #Full interval
+ev1 = [['2025-03-22/20:10','2025-03-23/09:20']] 
+ev1_reduced = ['2025-03-23/00:00','2025-03-23/09:20']
 
-eventlist=[ev1]
+eventlist=[ev1_reduced]
 #%%
 
 
@@ -183,25 +175,22 @@ allTpar_list = []
 allTperp_list = []
 allTparperp_list = []
 allangles_list = []
-alldB_list = []
-alldv_list = []
-alldn_list = []
-alldT_list = []
-alldvsqrdmag_list = []
-alldBsqrdmag_list = []
 
 for i in range(len(eventlist)):
 	trange = eventlist[i]
-	mag_vars = pyspedas.projects.solo.mag(trange=trange, datatype='rtn-normal',get_support_data=True, time_clip=False)
-	swa_vars = pyspedas.projects.solo.swa(trange=trange, datatype='pas-grnd-mom',get_support_data=True, time_clip=False)    
-
-	Bvec_name = 'B_RTN'
+	Bfld_vars = pyspedas.projects.psp.fields(trange=trange, level='l2', time_clip=True)
+	swp_vars = pyspedas.projects.psp.spi(trange=trange,level='l3',get_support_data=True,time_clip=True)
+	qtn_vars = pyspedas.projects.psp.fields(trange=trange,level='l3',datatype='sqtn_rfs_V1V2',time_clip=True)
+	
+	Bvec_name = 'psp_fld_l2_mag_RTN'
 	B_name = Bvec_name
 	PiTensor_name = 'P_RTN'
-	ni_name = 'N'
-	vi_name = 'V_RTN'
+	ni_name = 'electron_density'
+	vi_name = 'psp_spi_VEL_RTN_SUN'
 	Tscalar_name = 'T'
 	Ti_name = Tscalar_name
+	phivals_name = 'psp_spi_PHI_VALS'
+	ephi_name = 'psp_spi_EFLUX_VS_PHI'
 
 	interpvar_name = ni_name
 	timeax = pytplot.get_data(interpvar_name).times
@@ -225,12 +214,6 @@ for i in range(len(eventlist)):
 	P_mag = np.zeros_like(Tpar)
 	beta_par = np.zeros_like(Tpar)
 	angle = np.zeros_like(Tpar)
-	dB,dB_norm = np.zeros_like(Bvecs), np.zeros_like(Bvecs)
-	dv,dv_norm = np.zeros_like(vi), np.zeros_like(vi)
-	dvsqrdmag,dvsqrdmag_norm = np.zeros_like(Tpar), np.zeros_like(Tpar)
-	dBsqrdmag,dBsqrdmag_norm = np.zeros_like(Tpar), np.zeros_like(Tpar)
-	dn,dn_norm = np.zeros_like(ni), np.zeros_like(ni)
-	dT,dT_norm = np.zeros_like(T), np.zeros_like(T)
 
 
 
@@ -238,8 +221,6 @@ for i in range(len(eventlist)):
 	# Means
 	Bvecs_mean = get_vecmean(Bvecs,minutes*meaninterval)
 	vivecs_mean = get_vecmean(vi,minutes*meaninterval)
-	n_mean = get_mean(ni,minutes*meaninterval)
-	T_mean = get_mean(T,minutes*meaninterval)
 
 	for j in range(len(Bvecs)):  # Fixed: was shadowing outer loop variable i
 		Tpar[j], Tperp[j], Ppar[j], Pperp[j] = get_parperps(ni[j], PiTensor[j] / ni[j], Bvecs[j])
@@ -247,12 +228,6 @@ for i in range(len(eventlist)):
 		P_mag[j] = get_pm(Bvecs[j])
 		beta_par[j] = Ppar[j]/P_mag[j]
 		angle[j] = get_angle(Bvecs[j], Bvecs_mean[j])
-		dB[j],dB_norm[j] = get_delta(Bvecs[j], Bvecs_mean[j])
-		dv[j],dv_norm[j] = get_delta(vi[j], vivecs_mean[j])
-		dn[j],dn_norm[j] = get_deltascalar(ni[j], n_mean[j])
-		dT[j],dT_norm[j] = get_deltascalar(T[j], T_mean[j])
-		dvsqrdmag[j],dvsqrdmag_norm[j] = get_deltascalar(np.linalg.norm(vi[j])**2, np.linalg.norm(vivecs_mean[j])**2)
-		dBsqrdmag[j],dBsqrdmag_norm[j] = get_deltascalar(np.linalg.norm(Bvecs[j])**2, np.linalg.norm(Bvecs_mean[j])**2)
 
 	
 	allB_list.append(Bvecs)
@@ -265,12 +240,6 @@ for i in range(len(eventlist)):
 	allTperp_list.append(Tperp)
 	allTparperp_list.append(Tpar / Tperp)
 	allangles_list.append(angle)
-	alldB_list.append(dB)
-	alldv_list.append(dv)
-	alldn_list.append(dn)
-	alldT_list.append(dT)
-	alldvsqrdmag_list.append(dvsqrdmag)
-	alldBsqrdmag_list.append(dBsqrdmag)
 
 allB = np.concatenate(allB_list, axis=0)
 allv = np.concatenate(allv_list, axis=0)
@@ -283,12 +252,6 @@ allTpar = np.concatenate(allTpar_list, axis=0)
 allTperp = np.concatenate(allTperp_list, axis=0)
 allTparperp = np.concatenate(allTparperp_list, axis=0)
 allangles = np.concatenate(allangles_list, axis=0)
-alldB = np.concatenate(alldB_list, axis=0)
-alldv = np.concatenate(alldv_list, axis=0)
-alldn = np.concatenate(alldn_list, axis=0)
-alldT = np.concatenate(alldT_list, axis=0)
-alldvsqrdmag = np.concatenate(alldvsqrdmag_list, axis=0)
-alldBsqrdmag = np.concatenate(alldBsqrdmag_list, axis=0)
 #%%
 allvmags = np.zeros_like(allv[:,0])
 allBmags = np.zeros_like(allB[:,0])

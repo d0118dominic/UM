@@ -22,15 +22,17 @@ kb = 1.380649e-23
 # %%
  
 # Get Data
-trange = ['2017-07-11/22:34:00', '2017-07-11/22:34:06'] #Classic EDR
+# trange = ['2017-07-11/22:33:00', '2017-07-11/22:36:00'] #Classic EDR
 trange = ['2017-08-10/12:18:00', '2017-08-10/12:19:00']
-# trange = ['2017-06-17/20:24:00', '2017-06-17/20:24:15'] #Generator Event
+# trange = ['2017-06-17/20:24:05', '2017-06-17/20:24:10'] #Generator Event
 # trange = ['2016-12-09/09:03:54', '2016-12-09/09:03:55'] # E-only Event
 # trange = ['2016-12-09/09:02:00', '2016-12-09/09:05:00'] # 
 # trange = ['2017-07-11/22:33:45', '2017-07-11/22:34:15'] #
-trange = ['2015-10-16/13:07:00', '2015-10-16/13:07:05'] # #Oct 16th EDR
+# trange = ['2022-03-06/05:47:00', '2022-03-06/06:10:00'] # 
+# trange = ['2022-03-06/06:01:00', '2022-03-06/06:02:00'] # Flux Rope
+# trange = ['2015-09-08/11:01:19', '2015-09-08/11:01:22'] # #Low Shear EDR
  
-probe  = 2
+probe  = 1
 trange = trange
  
 fgm_vars = fgm(probe = probe, data_rate = 'brst', trange=trange,time_clip=True)
@@ -50,19 +52,43 @@ def reform(var):
 		newvar[i] = var[1][i]
 	return newvar
  
- 
+def get_omega_p(n,m,q):
+    omega_p = np.sqrt(n*q**2/(eps0*m))
+    return omega_p
+def get_omega_c(n,m,q):
+    omega_c = np.sqrt(q*B/m)
+    return omega_c
+
 def get_critscales(E,B,m,n,q,T):
     tau_KS = (1/q)*((2*B/(n*mu_0))**(1/3))*((m/E)**(2/3))     # tau_KS (kinetic ETD vs Poynting)
     l_KS   = (1/q)*((B/(n*mu_0))**(2/3))*((m/(2*E))**(1/3))   # l_KS
     tau_HS = (1/q)*(2*m*B/(5*mu_0*n*T))                        # tau_HS (thermal ETD vs Poynting)
     l_HS   = (1/q)*(2*m*E)*(B/(5*mu_0*n*T))**2                 # l_HS (T already in Joules, no kb)
     tau_D  = m/(q*B)                                            # tau_D (inverse cyclotron frequency)
+    # tau_D  = 1/get_omega_c(n,m,q)                                            # tau_D (inverse cyclotron frequency)
     l_D    = m*E/(2*q*B**2)                                     # l_D
     tau_KH = (1/q)*np.sqrt(5*m*T/E**2)                         # tau_KH (kinetic vs thermal ETD)
-    l_KH   = (1/q)*(5*T/(2*E))                                  # l_KH (T already in Joules, no kb)
+    l_KH   = (1/q)*(5*T/(2*E))
     return tau_KS, l_KS, tau_HS, l_HS, tau_D, l_D, tau_KH, l_KH
- 
- 
+
+def get_emscales(E,B,m,n,q):
+    omega_p = get_omega_p(n,m,q)
+    tau_E = 1/(np.sqrt(2)*omega_p)                                 # tau_E
+    tau_M = tau_E*B/(E*np.sqrt(eps0*mu0))                                 # tau_M
+    return tau_E, tau_M
+
+def get_j(ni,vi,ne,ve):
+    j = e*(ni*vi - ne*ve)
+    return j
+
+def get_Eprime(E,v,B):
+    E_prime = E + np.cross(v,B)
+    return E_prime
+
+def get_JdotE(j,E):
+    JdotE = np.dot(j,E)
+    return JdotE
+
 # Field names variables
 B_name = 'mms' + str(probe) + '_fgm_b_gse_brst_l2'
 E_name = 'mms' + str(probe) + '_edp_dce_gse_brst_l2'
@@ -79,7 +105,7 @@ Ti_name = 'mms' + str(probe) + '_dis_temptensor_gse_brst'
 Te_name = 'mms' + str(probe) + '_des_temptensor_gse_brst'
  
 ##%%
-var_name = B_name
+var_name = ve_name
 timeax = pytplot.get_data(var_name).times
  
 tinterpol(B_name,var_name, newname='B')
@@ -107,6 +133,18 @@ Ti = 1.602e-19*reform(get_data('Ti'))
 Te = 1.602e-19*reform(get_data('Te'))
  
 #%%
+
+JdotE = np.zeros(len(B))
+JdotEprime = np.zeros(len(B))
+J = np.zeros([len(B),3])
+Eprime = np.zeros_like(J)
+
+for i in range(len(B)):
+    J[i] = get_j(ni[i],vi[i],ne[i],ve[i])
+    Eprime[i] = get_Eprime(E[i],ve[i],B[i,:-1])
+    JdotE[i] = get_JdotE(J[i],E[i])
+    JdotEprime[i] = get_JdotE(J[i],Eprime[i])
+
 # Initialize arrays — electrons
 tau_KS_e = np.zeros(len(B))
 l_KS_e   = np.zeros(len(B))
@@ -116,6 +154,8 @@ tau_D_e  = np.zeros(len(B))
 l_D_e    = np.zeros(len(B))
 tau_KH_e = np.zeros(len(B))
 l_KH_e   = np.zeros(len(B))
+tau_E_e  = np.zeros(len(B))
+tau_M_e  = np.zeros(len(B))
  
 # Initialize arrays — ions
 tau_KS_i = np.zeros(len(B))
@@ -126,11 +166,14 @@ tau_D_i  = np.zeros(len(B))
 l_D_i    = np.zeros(len(B))
 tau_KH_i = np.zeros(len(B))
 l_KH_i   = np.zeros(len(B))
+tau_E_i  = np.zeros(len(B))
+tau_M_i  = np.zeros(len(B))
  
 for i in range(len(B)):
     tau_KS_e[i], l_KS_e[i], tau_HS_e[i], l_HS_e[i], tau_D_e[i], l_D_e[i], tau_KH_e[i], l_KH_e[i] = get_critscales(np.linalg.norm(E[i]),np.linalg.norm(B[i,:-1]),me,ne[i],e,np.trace(Te[i])/3)
     tau_KS_i[i], l_KS_i[i], tau_HS_i[i], l_HS_i[i], tau_D_i[i], l_D_i[i], tau_KH_i[i], l_KH_i[i] = get_critscales(np.linalg.norm(E[i]),np.linalg.norm(B[i,:-1]),mi,ni[i],e,np.trace(Ti[i])/3)
- 
+    tau_E_i[i],tau_M_i[i] = get_emscales(np.linalg.norm(E[i]),np.linalg.norm(B[i,:-1]),mi,ni[i],e)
+    tau_E_e[i],tau_M_e[i] = get_emscales(np.linalg.norm(E[i]),np.linalg.norm(B[i,:-1]),me,ne[i],e)
 # #%%
 fig, ax = plt.subplots(2,1,figsize=(10,8))
 ax[0].plot(tau_KS_e, label=r'$\tau_{KSe}$', color='blue')
@@ -204,21 +247,21 @@ options('li', 'color', ['b','r','g','m'])
 options('li', 'ylog', True)
  
 # Combined electron timescales
-electron_timescales = np.array([tau_KS_e, tau_D_e, tau_HS_e, tau_KH_e])
-ion_timescales      = np.array([tau_KS_i, tau_D_i, tau_HS_i, tau_KH_i])
- 
+electron_timescales = np.array([tau_KS_e, tau_D_e, tau_HS_e, tau_KH_e,tau_E_e,tau_M_e])
+ion_timescales      = np.array([tau_KS_i, tau_D_i, tau_HS_i, tau_KH_i,tau_E_i,tau_M_i])
+
 store_data('te', data={'x': timeax, 'y': electron_timescales.T})
 store_data('ti', data={'x': timeax, 'y': ion_timescales.T})
-options('te', 'legend_names', [r'$\tau_{KSe}$', r'$\tau_{De}$', r'$\tau_{HSe}$', r'$\tau_{KHe}$'])
+options('te', 'legend_names', [r'$\tau_{KSe}$', r'$\tau_{De}$', r'$\tau_{HSe}$', r'$\tau_{KHe}$',r'$\tau_{E}$',r'$\tau_{M}$'])
 options('te', 'ytitle', 'Time Scale (s)')
-options('te', 'thick', [1,1,1,1])
-options('te', 'color', ['b','r','g','m'])
+options('te', 'thick', [1,1,1,1,1,1])
+options('te', 'color', ['b','r','g','m','c','y'])
 options('te', 'ylog', True)
- 
-options('ti', 'legend_names', [r'$\tau_{KSi}$', r'$\tau_{Di}$', r'$\tau_{HSi}$', r'$\tau_{KHi}$'])
+
+options('ti', 'legend_names', [r'$\tau_{KSi}$', r'$\tau_{Di}$', r'$\tau_{HSi}$', r'$\tau_{KHi}$',r'$\tau_{E}$',r'$\tau_{M}$'])
 options('ti', 'ytitle', 'Time Scale (s)')
-options('ti', 'thick', [1,1,1,1])
-options('ti', 'color', ['b','r','g','m'])
+options('ti', 'thick', [1,1,1,1,1,1])
+options('ti', 'color', ['b','r','g','m','c','y'])
 options('ti', 'ylog', True)
  
 options(['ti','te','li','le'], 'legend_size', 22)
