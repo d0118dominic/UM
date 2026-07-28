@@ -426,8 +426,11 @@ encounter13 = [['2022-09-03/00:00','2022-09-03/01:00'],['2022-09-03/02:00','2022
 # encounter13 = [['2022-09-01/00:00','2022-09-11/00:00'],['2022-09-03/00:00','2022-09-03/01:00']]
 
 encounter24 = [['2025-06-17/00:00', '2025-06-21/00:00'], ['2025-06-21/00:00', '2025-06-21/01:00']]
-enc23coronalhole = [['2025-03-22/20:10','2025-03-23/09:20']] # Encounter 21
-# enc23coronalhole_reduced = [['2025-03-23/00:00','2025-03-23/09:20']] # Encounter 21
+enc23coronalhole = [['2025-03-22/20:10','2025-03-23/15:00']] # Encounter 21
+
+# enc23coronalhole_fast = [['2025-03-22/23:40','2025-03-23/04:00']] # Encounter 21
+enc23coronalhole_fast = [['2025-03-23/01:00','2025-03-23/04:00']] # Encounter 21
+enc23coronalhole_slow = [['2025-03-23/07:50','2025-03-23/14:00']] # Encounter 21
 # enc23 = [['2025-03-18/20:10','2025-03-25/00:20']] # Encounter 23
 
 # near_sups = [['2024-09-27/04:30','2024-09-27/06:30'], # 2 hr Encounter 21
@@ -479,9 +482,12 @@ enc23coronalhole = [['2025-03-22/20:10','2025-03-23/09:20']] # Encounter 21
 # eventlist = sup_alfs+sub_alfs+near_alfs
 # eventlist = sup_alfs_alt#+sub_alfs
 eventlist = sup_alfs_alt+sub_alfs+near_alfs+betaparlist
-eventlist = enc23coronalhole
+# eventlist = [['2023-06-20/22:20','2023-06-20/22:40']]
+# eventlist = [['2023-06-20/21:30','2023-06-20/23:30']]
+eventlist = enc23coronalhole_fast
 # eventlist = encounter24
-# eventlist = sup_alfs_alt[0:2]
+# eventlist = [['2022-09-06/18:00','2022-09-07/06:00']]
+# eventlist = [sub_alfs[1]]
 
 # Sup-alfs with the large beta_par instability
 # 7 (July 1-2 2024, 21:00-03:00) (some large-scale Br reversal)
@@ -489,7 +495,6 @@ eventlist = enc23coronalhole
 # 2 ( March 16 2023 0-4:00) (more big Br reversalss)
 # 3 (kinda) (June 24 2023 )
 
-#%%
 
 allBmags = np.array([])
 allvmags = np.array([])
@@ -706,7 +711,7 @@ for i in range(len(eventlist)):
 
 
 	# FOV filtering
-	# FOV_filter()
+	FOV_filter()
 
 	# FOV_flagged()
 
@@ -906,11 +911,11 @@ for i in range(len(eventlist)):
 	allpositions = np.concat([allpositions,position])
 	
 	allvr = np.concat([allvr,vr])
-	allvt = np.concat([allvr,vt])
-	allvn = np.concat([allvr,vn])
-	allBr = np.concat([allvr,Br])
-	allBt = np.concat([allvr,Bt])
-	allBn = np.concat([allvr,Bn])
+	allvt = np.concat([allvt,vt])
+	allvn = np.concat([allvn,vn])
+	allBr = np.concat([allBr,Br])
+	allBt = np.concat([allBt,Bt])
+	allBn = np.concat([allBn,Bn])
 
 	allSr = np.concat([allSr,S[:,0]])
 	allKr = np.concat([allKr,K[:,0]])
@@ -968,6 +973,31 @@ for i in range(len(eventlist)):
 	
 
 
+def get_pspvals():
+	n = 1e-6*np.nanmean(alln)	
+	nstd = 1e-6*np.nanstd(alln)
+	T = np.nanmean(allT)/(1.602e-19)
+	Tstd = np.nanstd(allT)/(1.602e-19)
+	v = 1e-3*np.nanmean(allvmags)
+	vstd = 1e-3*np.nanstd(allvmags)
+	B = 1e9*np.nanmean(allBmags)
+	Bstd = 1e9*np.nanstd(allBmags)
+	dB = 1e9*np.nanmean(alldBmag)
+	dBstd = 1e9*np.nanstd(alldBmag)
+
+	return n,nstd,T,Tstd,v,vstd,B,Bstd,dB,dBstd
+
+
+
+if (eventlist == enc23coronalhole_fast):
+	npsp_fast,nstdpsp_fast,Tpsp_fast,Tstdpsp_fast,vpsp_fast,vstdpsp_fast,Bpsp_fast,Bstdpsp_fast,dBpsp_fast,dBstdpsp_fast = get_pspvals()
+	print("Fast Variables")
+elif (eventlist == enc23coronalhole_slow):
+	npsp_slow,nstdpsp_slow,Tpsp_slow,Tstdpsp_slow,vpsp_slow,vstdpsp_slow,Bpsp_slow,Bstdpsp_slow,dBpsp_slow,dBstdpsp_slow = get_pspvals()
+	print("Slow Variables")
+else:
+	npsp,nstdpsp,Tpsp,Tstdpsp,vpsp,vstdpsp,Bpsp,Bstdpsp,dBpsp,dBstdpsp = get_pspvals()
+	print("Variables")
 # %%
 
 allmagperpart = 6.242e18*(allBmags**2)/(2*mu0*alln)

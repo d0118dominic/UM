@@ -58,7 +58,7 @@ def brazilplot(z, x_label='', y_label='', z_label='', title='',mask = allbeta_pa
     plt.legend()
     plt.show()
 
-def brazilhist(z, x_label=r'$\beta_\parallel$', y_label=r'$T_{\parallel}/T_{\perp}$',
+def brazilhist(z, x_label=r'$\beta_\parallel$', y_label=r'$T_{\perp}/T_{\parallel}$',
      z_label='', title='',nbins=50,mincount=10,vmin=1,vmax=10000, mask = allTparperp>0,count=False,scale = 'linear',fitline=False):    
     mirror_params = [0.77, 0.76, -0.016]  # [a, b, beta0]
     firehose_params = [-1.4, 1.0, -0.11]  # [a, b, beta0]
@@ -155,23 +155,24 @@ def brazilhist(z, x_label=r'$\beta_\parallel$', y_label=r'$T_{\parallel}/T_{\per
 
 # brazilplot(1e3*allbeta_par, r'$\beta_\parallel$', r'$T_{\perp}/T_{\parallel}$', r'$v_x$'
 
-nratio = abs(alln)/np.nanmean(abs(alln))
-Tratio = abs(allT)/np.nanmean(abs(allT))
-vratio = abs(allvmags)/np.nanmean(abs(allvmags))
-nTratio = nratio*Tratio
+# nratio = abs(alln)/np.nanmean(abs(alln))
+# Tratio = abs(allT)/np.nanmean(abs(allT))
+# vratio = abs(allvmags)/np.nanmean(abs(allvmags))
+# nTratio = nratio*Tratio
 
-bulkratio = abs(alln)*allvmags**2/np.nanmean(abs(alln)*allvmags**2)
+# bulkratio = abs(alln)*allvmags**2/np.nanmean(abs(alln)*allvmags**2)
 
-brazilhist(abs(alln)/np.nanmean(abs(alln)), z_label = r'$n/\langle n \rangle$',fitline=False,nbins=80,vmin=0,vmax=2,count=False,scale='linear')
-brazilhist(abs(allT)/np.nanmean(abs(allT)), z_label = r'$T/\langle T \rangle$',fitline=False,nbins=80,vmin=0,vmax=2,count=False,scale='linear')
-brazilhist(abs(allvmags)/np.nanmean(abs(allvmags)), z_label = r'$v/\langle v \rangle$',fitline=False,nbins=80,vmin=0,vmax=2,count=False,scale='linear')
-brazilhist(nratio*Tratio, z_label = r'$nT/\langle nT \rangle$',fitline=False,nbins=80,vmin=0,vmax=2,count=False,scale='linear')
-brazilhist(bulkratio, z_label = r'$nv^2/\langle nv^2 \rangle$',fitline=False,nbins=80,vmin=0,vmax=2,count=False,scale='linear')
+# brazilhist(1e-3*abs(allvmags), z_label = r'$v \ (km/s)$',fitline=False,nbins=80,vmin=200,vmax=300,count=False,scale='linear')
+#%%
+# brazilhist(abs(allT)/np.nanmean(abs(allT)), z_label = r'$T/\langle T \rangle$',fitline=False,nbins=80,vmin=0,vmax=200,count=True,scale='linear')
+# brazilhist(abs(allvmags)/np.nanmean(abs(allvmags)), z_label = r'$v/\langle v \rangle$',fitline=False,nbins=80,vmin=0,vmax=200,count=False,scale='linear')
+# brazilhist(nratio*Tratio, z_label = r'$nT/\langle nT \rangle$',fitline=False,nbins=80,vmin=0,vmax=200,count=True,scale='linear')
+# brazilhist(bulkratio, z_label = r'$nv^2/\langle nv^2 \rangle$',fitline=False,nbins=80,vmin=0,vmax=200,count=True,scale='linear')
 
 
 #%%
 # brazilhist(1.602e19*abs(allT), z_label = r'$T \ (eV)$',fitline=False,nbins=60,vmin=00,vmax=200,count=False,scale='linear')
-brazilhist(1e-3*abs(allvmags), z_label = r'$v \ (km/s)$',fitline=False,nbins=60,vmin=400,vmax=800,count=False,scale='linear')
+brazilhist(1e-3*abs(allvmags), z_label = r'$v \ (km/s)$',fitline=False,nbins=30,vmin=0,vmax=30,count=True,scale='linear')
 # brazilhist(1e-6*abs(alln), z_label = r'$n \ (cm^{-3})$',fitline=False,nbins=60,vmin=0,vmax=10,count=False,scale='linear')
 
 #%%

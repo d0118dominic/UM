@@ -631,6 +631,8 @@ trange = betaparlist[2]
 trange=['2022-09-05/00:00','2022-09-05/12:00']
 # trange=['2025-03-23/00:00','2025-03-24/00:00']
 # longints = [['2025-06-15/00:00','2025-06-23/00:00'],['2025-03-18/00:00','2025-03-27/00:00']]
+
+trange = ['2023-06-20/22:00','2023-06-20/23:00']
 Bfld_vars = pyspedas.projects.psp.fields(trange=trange, level='l2', time_clip=True)
 spi_vars = pyspedas.projects.psp.spi(trange=trange,level='l3',time_clip=True,get_support_data=True)
 # spe_vars = pyspedas.projects.psp.spe(trange=trange,level='l2',time_clip=True)

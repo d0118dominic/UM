@@ -120,9 +120,9 @@ def Instability_plot(allbeta_par, allTparperp, alldB_norm_mag):
     innerlim = 0
     outerlim = 60
     mask = ((allpositions <= outerlim) & (allpositions>=innerlim))
-    mask = ((allpositions>=0)&(allpositions<=30)&(allvmags>=300e3) & (allmachs>=0) & (allbeta_par>=10**-1))
-    mask = ((allpositions>=0)&(allpositions<=50)&(allvmags>=300e3) & (allmachs>=0.6) & (allmachs<=10000) & (allbeta_par>=0))
-    mask1 = ((allangles>=90)&(allpositions>=0)&(allpositions<=50)&(allvmags>=300e3) & (allmachs>=0.6) & (allbeta_par>=0))
+    mask = ((allpositions>=0)&(allpositions<=30)&(allvmags>=00e3) & (allmachs>=0) & (allbeta_par>=10**-1))
+    mask = ((allpositions>=0)&(allpositions<=50)&(allvmags>=00e3) & (allmachs>=0.) & (allmachs<=10000) & (allbeta_par>=0))
+    # mask1 = ((allangles>=90)&(allpositions>=0)&(allpositions<=50)&(allvmags>=300e3) & (allmachs>=0.6) & (allbeta_par>=0))
 
     x = np.log10(allbeta_par[mask])
     y = np.log10(1/allTparperp[mask])
@@ -161,13 +161,13 @@ def Instability_plot(allbeta_par, allTparperp, alldB_norm_mag):
     
     # Define bins
     bins = 50
-    mincount = 10
-    x_bins = np.linspace(-2, 1, bins)
+    mincount = 0
+    x_bins = np.linspace(-3, 1, bins)
     y_bins = np.linspace(-1, 1, bins)
     
     # Calculate the mean/max of 'z' for each bin
     mean_z, x_edge, y_edge, bin_number = binned_statistic_2d(
-        x_valid, y_valid, z_valid, statistic='mean', bins=[x_bins, y_bins]  # Now use 'mean'
+        x_valid, y_valid, z_valid, statistic='count', bins=[x_bins, y_bins]  # Now use 'mean'
     )
     
     # mean_z, x_edge, y_edge, bin_number = binned_statistic_2d(
@@ -208,7 +208,7 @@ def Instability_plot(allbeta_par, allTparperp, alldB_norm_mag):
     # Plot the 2D histogram
     im = ax.imshow(mean_z_masked.T, origin='lower', 
                 extent=[x_edge[0], x_edge[-1], y_edge[0], y_edge[-1]], 
-                cmap='jet', aspect='auto',vmin=0.5,vmax=1)
+                cmap='jet', aspect='auto',norm=norm)
     # Add colorbar
     cbar = plt.colorbar(im, ax=ax)
     cbar.ax.tick_params(labelsize=15)
@@ -241,7 +241,7 @@ def Instability_plot(allbeta_par, allTparperp, alldB_norm_mag):
     
     
     # Create beta_parallel array (logarithmically spaced)
-    betapar = np.logspace(-2, 1, 10000)  # From 0.01 to 10
+    betapar = np.logspace(-3, 1, 10000)  # From 0.01 to 10
 
     # Calculate T_perp/T_par for both instabilities
     Tperppar_m = stability_condition(betapar, mirror_params[0], mirror_params[1], mirror_params[2])
@@ -274,7 +274,7 @@ def Instability_plot(allbeta_par, allTparperp, alldB_norm_mag):
     ax.axvline(x=0, color='k', linewidth=1.5)
     
     # Set limits and labels
-    ax.set_xlim(-2, 1)
+    ax.set_xlim(-3, 1)
     ax.set_ylim(-1, 1)
     ax.tick_params(labelsize=15)
     ax.set_xlabel(r'$Log_{_{10}}(\beta_\parallel)$', fontsize=23)
@@ -287,17 +287,17 @@ def Instability_plot(allbeta_par, allTparperp, alldB_norm_mag):
     # Scatterplot of small subset
     a = np.log10(allbeta_par)
     b = np.log10(1/allTparperp)
-    sc = ax.scatter(a[mask1], (b[mask1]), marker='o', c='k', s=15,label=r'$\theta \geq 90^o$')
-    x_fit = a[mask1]
-    y_fit = b[mask1]
-    # Clean data
-    valid = np.isfinite(x_fit) & np.isfinite(y_fit)
-    x_fit = x_fit[valid]
-    y_fit = y_fit[valid]
-    m, c = np.polyfit(x_fit, y_fit, 1)
-    # Create fit line
-    x_line = np.linspace(-2, 1, 200)
-    y_line = m * x_line + c
+    # sc = ax.scatter(a[mask1], (b[mask1]), marker='o', c='k', s=15,label=r'$\theta \geq 90^o$')
+    # x_fit = a[mask1]
+    # y_fit = b[mask1]
+    # # Clean data
+    # valid = np.isfinite(x_fit) & np.isfinite(y_fit)
+    # x_fit = x_fit[valid]
+    # y_fit = y_fit[valid]
+    # m, c = np.polyfit(x_fit, y_fit, 1)
+    # # Create fit line
+    # x_line = np.linspace(-2, 1, 200)
+    # y_line = m * x_line + c
     # Plot fit
     # ax.plot(x_line, y_line, 'r-', linewidth=3,
     #         label=rf'Best fit: $\beta_\parallel^{{{m:.2f}}}$',color='k',linestyle='-')
@@ -311,12 +311,12 @@ def Instability_plot(allbeta_par, allTparperp, alldB_norm_mag):
     y_fit = y_fit[valid]
     m, c = np.polyfit(x_fit, y_fit, 1)
     # Create fit line
-    x_line = np.linspace(-2, 1, 200)
+    x_line = np.linspace(-3, 1, 200)
     y_line = m * x_line + c
 
     # Plot fit
-    ax.plot(x_line, y_line, 'r-', linewidth=3,
-            label=rf'Best fit: $\beta_\parallel^{{{m:.2f}}}$',color='b',linestyle='-')
+    # ax.plot(x_line, y_line, 'r-', linewidth=3,
+            # label=rf'Best fit: $\beta_\parallel^{{{m:.2f}}}$',color='b',linestyle='-')
     # ax.plot(log_betapar, log_Tperppar_cgl1, linewidth=1, linestyle='-', color='k',label=r'$\beta^{-1}_\parallel$')
     # ax.plot(log_betapar, log_Tperppar_cgl2, linewidth=1, linestyle='-', color='k',label=r'$\beta^{-0.2}_\parallel$')
 
@@ -331,275 +331,6 @@ def Instability_plot(allbeta_par, allTparperp, alldB_norm_mag):
 
 # Example usage (you would call this with your actual data):
 fig, ax = Instability_plot(allbeta_par, allTparperp, alldB_norm_mag)
-
-# %%
-
-def stability_condition(betapar, a, b, beta0):
-    """
-    Calculate T_perp/T_par stability boundary based on beta_parallel and instability parameters.
-    From Bale et al. 2009: T_perp/T_par = 1 + a/(beta_par - beta0)^b
-    """
-    denom = (betapar - beta0)**b
-    Tperppar = 1 + a/denom
-    return Tperppar
-
-
-def cgl_curve(beta_par, beta_par_0=1.0, Tperppar_0=1.0,exponent=1.0):
-   
-    ratio = (beta_par_0 / beta_par)**exponent
-    Tperppar = Tperppar_0 * ratio
-    return Tperppar
-
-
-def Instability_plot(allbeta_par, allTparperp, alldB_norm_mag):
-    """
-    Plot 2D histogram of plasma data with stability condition boundaries overlaid.
-    """
-    # Prepare data for histogram
-
-    innerlim = 0
-    outerlim = 50
-    mask = ((allpositions <= outerlim) & (allpositions>=innerlim))
-#     mask = ((allvmags >= 200e3) & (allvmags<=300e3))
-    #mask = ((allvmags >= 100e3) & (allvmags<=200e3) & 
-        #(allpositions <= outerlim) & (allpositions>=innerlim))
-#     mask = ((allvmags>=400e3) & (allpositions>=55) & (allpositions<=700))
-
-    mask = ((allpositions>=0)&(allpositions<=900)&(allvmags>=00e3)&(allvmags<=600e3))
-    # mask = ((np.log10(allmachs)>=-1) & (np.log10(allmachs)<=-0.2) & (allpositions<=40) &(allvmags>=300e3) & (allvmags<=600e3))
-    # mask1 = ((allangles>=90) & (np.log10(allmachs)>=-0.2) & (np.log10(allmachs)<=0.2) & (allpositions<=40) &(allvmags>=400e3) & (allvmags<=600e3))
-#     mask1 = ((allangles>=90) & (allpositions>=25) & (allpositions<=40) &(allvmags>=00e3) & (allvmags<=600e3))
-    # mask2 = ((allangles>=90) & (allpositions>=30) & (allpositions<=70) &(allvmags>=00e3) & (allvmags<=600e3))
-
-    x = np.log10(allbeta_par[mask])
-    y = np.log10(1/allTparperp[mask])
-    # z = abs(alldv_norm_mag[mask] * allvmags[mask] / allva[mask])
-    z = allpositions[mask]
-    # z = r_norm[mask]**(0)*allT[mask]/1.602e-19 # variable for colorbar
-    # z = r_norm[mask]**(2)*allTperp[mask]/allTpar[mask]# variable for colorbar
-#     z = np.log10(allmachs[mask])
-#     z = abs(allcrosshelicity[mask])
-    # z = (r_norm[mask]**2)*allSmags[mask]
-    # z = (r_norm[mask]**2)*allKr[mask]
-    # z = allmachs[mask]
-
-    # Filter out invalid values (inf, -inf, nan)
-    valid_mask = np.isfinite(x) & np.isfinite(y) & np.isfinite(z)
-    x_valid = x[valid_mask]
-    y_valid = y[valid_mask]
-    z_valid = z[valid_mask]
-    
-    print(f"Filtered out {np.sum(~valid_mask)} invalid points out of {len(x)} total")
-    
-    # Define bins
-    bins = 90
-    mincount=0
-    x_bins = np.linspace(-3, 1, bins)
-    y_bins = np.linspace(-1, 1, bins)
-    
-    # Calculate the mean/max of 'z' for each bin
-    mean_z, x_edge, y_edge, bin_number = binned_statistic_2d(
-        x_valid, y_valid, z_valid, statistic='count', bins=[x_bins, y_bins]  # Now use 'mean'
-
-
-    )
-    
-
-
-    # Calculate counts to identify zero bins
-    count_z, _, _, _ = binned_statistic_2d(
-        x_valid, y_valid, z_valid, statistic='count', bins=[x_bins, y_bins]
-    )
-    
-    # Create a masked array where zero-count bins are masked
-    mean_z_masked = np.ma.masked_where(count_z <=mincount, mean_z)
-
-    # Also mask any remaining invalid values
-    mean_z_masked = np.ma.masked_invalid(mean_z_masked)
-    
-    # Create figure
-    fig, ax = plt.subplots(figsize=(10, 7.5))
-    
-    # First, plot the zero-count bins in light grey
-    zero_mask = count_z <= mincount
-    if np.any(zero_mask):
-        zero_array = np.full_like(mean_z, 1.0)
-        zero_array[~zero_mask] = np.nan
-        
-        ax.imshow(zero_array.T, origin='lower', 
-                extent=[x_edge[0], x_edge[-1], y_edge[0], y_edge[-1]], 
-                cmap='gray', aspect='auto', vmin=0.8, vmax=1.2, alpha=0.4)
-    
-
-
-#     norm = colors.LogNorm(vmin=1e-8, vmax=1e-6)
-# #     norm = colors.LogNorm(vmin=1e7, vmax=1e10)
-#     norm = colors.LogNorm(vmin=1e2, vmax=4e3)
-
-    disccolors = ['b','w','r']
-    bounds = [-0.5,-0.2,0.2,0.5]
-    cmap = mcolors.ListedColormap(disccolors)
-    discnorm = mcolors.BoundaryNorm(bounds,cmap.N)
-    norm = colors.LogNorm(vmin=1e-1, vmax=1e4)
-    # norm = colors.LogNorm(vmin=1e-2, vmax=1e-1)
-    # norm = colors.LogNorm(vmin=1e2 , vmax=1e3)
-    # norm = colors.Normalize(vmin=-1, vmax=1)
-    im = ax.imshow(mean_z_masked.T, origin='lower', 
-                extent=[x_edge[0], x_edge[-1], y_edge[0], y_edge[-1]], 
-                # cmap=cmap, aspect='auto',norm=discnorm)
-                cmap='jet', aspect='auto',norm=norm)
-    # Add colorbar
-    cbar = plt.colorbar(im, ax=ax)
-    cbar.ax.tick_params(labelsize=17)
-    cbar.set_label(r'$\delta v / v_a$', fontsize=15)
-    # cbar.set_label(r'$\delta B$', fontsize=12)
-    cbar.set_label(r'$\theta_{def}$', fontsize=15)
-    cbar.set_label(r'$\langle\theta \rangle$', fontsize=15)
-    #cbar.set_label(r'$R^{10/3} \  nT \  (ev \ cm^{-1})$', fontsize=12)
-    # cbar.set_label(r'$  \mathscr{R}^{4/3} T \ (eV)$', fontsize=17)
-    cbar.set_label(r'$T_{\alpha} \ (eV)$', fontsize=17)
-    cbar.set_label(r'$V_{\alpha} \ (km/s)$', fontsize=17)
-    # cbar.set_label(r'$dB \  Energy \ per \ particle \ (eV) $', fontsize=12)
-    # cbar.set_label(r'$R^{4/3} \ S_p  \ (keV/m^2)$', fontsize=12)
-    cbar.set_label(r'$Log_{10}(M_a)$', fontsize=17)
-    # cbar.set_label(r'$\langle\theta\rangle$', fontsize=18)
-    # cbar.set_label(r'$ R/R_s$', fontsize=15)
-    # cbar.set_label(r'$R/R_s$', fontsize=17)
-    # cbar.set_label(r'$\mathscr{R}^2 \ |S|$', fontsize=17)
-    cbar.set_label(r'Counts', fontsize=17)
-#     cbar.set_label(r'|$\sigma_c$|', fontsize=17)
-
-    # Now overlay the stability condition curves
-    # Define parameters for different instabilities
-    # These all come from Hellinger 06, and are used in Bale 09
-    mirror_params = [0.77, 0.76, -0.016]  # [a, b, beta0]
-    firehose_params = [-1.4, 1.0, -0.11]  # [a, b, beta0]
-    cyclotron_params = [0.45, 0.4, -0.0004]  # [a, b, beta0]
-    parfirehose_params = [-0.47, 0.53, 0.59]  # [a, b, beta0]
-    # cyclotron_params = [0.62, 0.41, -0.0002]  # [a, b, beta0] #from coello-guzman manuscript
-    # parfirehose_params = [-0.74, 0.37, 0.91]  # [a, b, beta0] #from corllo-guzman manuscript
-    
-    
-    
-    # Create beta_parallel array (logarithmically spaced)
-    betapar = np.logspace(-3, 1, 10000)  # From 0.001 to 100
-    
-    # Calculate T_perp/T_par for both instabilities
-    Tperppar_m = stability_condition(betapar, mirror_params[0], mirror_params[1], mirror_params[2])
-    Tperppar_f = stability_condition(betapar, firehose_params[0], firehose_params[1], firehose_params[2])
-    Tperppar_pf = stability_condition(betapar, parfirehose_params[0], parfirehose_params[1], parfirehose_params[2])
-    Tperppar_c = stability_condition(betapar, cyclotron_params[0], cyclotron_params[1], cyclotron_params[2])
-    
-    # Calculate CGL double adiabatic curves
-    beta_par_0 = 0.02  # Reference beta_parallel
-    Tperppar_0 = 1  # Reference T_perp/T_par (isotropic starting point)
-    exp1 = 1
-    exp2 = 0.5
-    exp3 = 0.6
-    exp4 = 1
-
-    beta_par_0 = 10**-0.7  # Reference beta_parallel
-    Tperppar_0 = 10**0.45  # Reference T_perp/T_par (isotropic starting point)
-    exp1 = 1
-#     exp1 = 0.4
-#     exp2 = 0.5
-#     exp3 = 0.6
-#     exp4 = 1
-   
-    Tperppar_cgl1 = cgl_curve(betapar, beta_par_0, Tperppar_0,exp1)
-    # Tperppar_cgl2 = cgl_curve(betapar, 10**-0., 1,1.3)
-    Tperppar_cgl3 = cgl_curve(beta_par, 1, Tperppar_0,1)
-    
-    Tperppar_cgl2 = cgl_curve(betapar, 10**-1, Tperppar_0,1)
-    Tperppar_cgl3 = cgl_curve(betapar,10**-0.5, Tperppar_0,1)
-    Tperppar_cgl4 = cgl_curve(betapar,10**0, Tperppar_0,1)
-    
-#     Tperppar_cgl1 = cgl_curve(betapar, 10**-1.6,Tperppar_0,0.55)
-    Tperppar_cgl2 = cgl_curve(betapar, 10**-1.6,Tperppar_0,0.55)
-    # Tperppar_cgl1 = cgl_curve(betapar, 10**-0.65,Tperppar_0,0.55)
-#     Tperppar_cgl2 = cgl_curve(betapar, beta_par_0, 10**0.1,0.2)
-    
-#     Tperppar_cgl4 = cgl_curve(betapar,beta_par_0, 10**0.1,0.3) #non-CGL
-    
-    # Convert to log10 space to match the histogram axes
-    log_betapar = np.log10(betapar)
-    log_Tperppar_m = np.log10(Tperppar_m)
-    log_Tperppar_f = np.log10(Tperppar_f)
-    log_Tperppar_pf = np.log10(Tperppar_pf)
-    log_Tperppar_c = np.log10(Tperppar_c)
-    log_Tperppar_cgl1 = np.log10(Tperppar_cgl1)
-    log_Tperppar_cgl2 = np.log10(Tperppar_cgl2)
-    log_Tperppar_cgl3 = np.log10(Tperppar_cgl3)
-    log_Tperppar_cgl4 = np.log10(Tperppar_cgl4)
-    
-    # Plot the stability condition curves
-    ax.plot(log_betapar, log_Tperppar_m, 'w-', linewidth=3, 
-            label='Mirror', linestyle='dotted',color='k')
-    ax.plot(log_betapar, log_Tperppar_c, 'w-', linewidth=1.5, 
-             label='IC', linestyle='dotted',color='k')
-    ax.plot(log_betapar, log_Tperppar_f, 'w-', linewidth=3, 
-            label='Oblique FH', linestyle='--',color='k')
-    ax.plot(log_betapar, log_Tperppar_pf, 'w-', linewidth=1.5, 
-            label='Parallel FH', linestyle='--',color='k')
-    
-#     Plot CGL double adiabatic curves
-    ax.plot(log_betapar, log_Tperppar_cgl1, linewidth=1, linestyle='-', color='blue',label=r'$\beta^{-1}_\parallel$')
- 
-#     ax.plot(log_betapar, log_Tperppar_cgl2, linewidth=1, 
-#             label=r'$\beta_{\parallel}^{-0.5}$', linestyle='-', color='red')
-    
-    ax.plot(log_betapar, log_Tperppar_cgl2, linewidth=1, linestyle='-', color='r',label=r'$\beta^{-0.55}_\parallel$')
-    # ax.plot(log_betapar, log_Tperppar_cgl3, linewidth=1, linestyle='-', color='b')
-    # ax.plot(log_betapar, log_Tperppar_cgl4, linewidth=1, linestyle='-', color='b', label=r'$\beta^{-1}_\parallel$')
-
-    # Add reference lines
-    ax.axhline(y=0, color='k', linewidth=1.5)
-    ax.axvline(x=0, color='k', linewidth=1.5)
-    
-    # Set limits and labels
-    ax.set_xlim(-3, 1)
-    ax.set_ylim(-1, 1)
-    ax.tick_params(labelsize=17)
-    ax.set_xlabel(r'$Log_{10}(\beta_\parallel)$', fontsize=17)
-    ax.set_ylabel(r'$Log_{10}(T_\perp/T_\parallel)$', fontsize=17)
-    # ax.set_xlabel(r'$Log_{10}(\ \frac{r^2}{\langle r \rangle^2} \ \beta_\parallel \ )$', fontsize=12)
-    # ax.set_ylabel(r'$Log_{10}(\ \frac{\langle r \rangle^2}{r^2} \ (T_\perp/T_\parallel) \ \ )$', fontsize=12)
-    
-    # Add legend with white background for visibility
-
-
-
-    # Scatterplot of small subset
-    a = np.log10(allbeta_par)
-    b = np.log10(1/allTparperp)
-    sc = ax.scatter(a[mask1], (b[mask1]), marker='o', c='k', s=15,label=r'$\theta \geq 90^o$')
-    x_fit = a[mask1]
-    y_fit = b[mask1]
-    # Clean data
-    valid = np.isfinite(x_fit) & np.isfinite(y_fit)
-    x_fit = x_fit[valid]
-    y_fit = y_fit[valid]
-    m, c = np.polyfit(x_fit, y_fit, 1)
-    # Create fit line
-    x_line = np.linspace(-3, 1, 200)
-    y_line = m * x_line + c
-    # Plot fit
-    # ax.plot(x_line, y_line, 'r-', linewidth=3,
-    #         label=rf'Best fit: $\beta^{{{m:.2f}}}$',color='b',linestyle='-')
-
-    # ax.plot(log_betapar, log_Tperppar_cgl1, linewidth=1, linestyle='-', color='k',label=r'$\beta^{-1}_\parallel$')
-    # ax.plot(log_betapar, log_Tperppar_cgl2, linewidth=1, linestyle='-', color='k',label=r'$\beta^{-0.2}_\parallel$')
-
-    
-    ax.legend(loc='upper right', fontsize=15, facecolor='white', framealpha=0.8)
-    plt.tight_layout()
-    plt.show()
-    
-    return fig, ax
-
-fig, ax = Instability_plot(allTparperp, allTparperp, allTparperp)
-# sc = plt.scatter(x[mask1],(y[mask1]),marker='*',c='r',s=3)
-
 
 
 # %%

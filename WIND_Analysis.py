@@ -19,7 +19,7 @@ kb = 1.380649e-23
 
 import pyspedas
 from pyspedas import tplot
-mfi_vars = pyspedas.projects.wind.mfi(trange=['2013-11-5', '2013-11-6'])
+mfi_vars = pyspedas.projects.wind.mfi(trange=['2025-03-26/14:50','2025-03-29/04:20'])
 tplot('BGSE')
 
 #%%
@@ -113,11 +113,14 @@ def filter_deflections(var,threshold):
 # highest time resolutions for swe instrument: 92s (ions) & 6-12 s (electrons) 
 # Assuming solar wind velocity of 400 km/s, this corresponds to structure sizes of 6 & 0.4-0.8 Re
 
-trange=['2019-01-01/00:00', '2019-01-30/00:00']
+trange=['2025-03-26/14:50','2025-03-29/04:20']
+trange=['2025-03-23/14:50','2025-03-24/04:20']
 # trange=['2019-01-20/00:00', '2019-01-30/00:00']
-swe_vars = pyspedas.projects.wind.swe(trange=trange)
-mfi_vars = pyspedas.projects.wind.mfi(trange=trange)
-# tdp_vars = pyspedas.projects.wind.threedp(trange=trange)
+# swe_vars_ions = pyspedas.projects.wind.swe(trange=trange, datatype = 'k0')
+swe_vars_electrons = pyspedas.projects.wind.swe(trange=trange, datatype = 'h5')
+# swe_vars_ions = pyspedas.projects.wind.swe(trange=trange, datatype = '')
+# mfi_vars = pyspedas.projects.wind.mfi(trange=trange)
+# tdp_vars = pyspedas.projects.wind.threedp(trange=trange,datatype='3dp_em')
 
 # tplot(['N_elec', 'T_elec','U_eGSE','BGSE'])
 

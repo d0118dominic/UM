@@ -166,12 +166,16 @@ def get_residenergy(v,B,n,m): # vector dv & dB (Alfven units??)
 ev1 = ['2025-03-28/19:30', '2025-04-03/14:50'] #Full interval
 ev1_reduced = ['2025-03-28/19:30', '2025-04-01/00:00'] #Full interval
 
-eventlist=[ev1]
-#%%
+
+# enc23coronalhole_fast = [['2025-03-29/01:20','2025-04-01/16:20']] # Encounter 21
+enc23coronalhole_fast = [['2025-03-30/00:00','2025-04-01/00:00']] # Encounter 21
+enc23coronalhole_slow = [['2025-03-23/00:40','2025-03-24/05:20']] # Encounter 21
+enc23coronalhole_full = [['2025-03-23/00:40','2025-04-01/16:20']] # Encounter 21
+
+eventlist=enc23coronalhole_slow
 
 
 
-# %%
 allB_list = []
 allv_list = []
 alln_list = []
@@ -289,12 +293,39 @@ alldn = np.concatenate(alldn_list, axis=0)
 alldT = np.concatenate(alldT_list, axis=0)
 alldvsqrdmag = np.concatenate(alldvsqrdmag_list, axis=0)
 alldBsqrdmag = np.concatenate(alldBsqrdmag_list, axis=0)
-#%%
+
 allvmags = np.zeros_like(allv[:,0])
 allBmags = np.zeros_like(allB[:,0])
 for i in range(len(allv)):
 	allvmags[i] = np.linalg.norm(allv[i])
 	allBmags[i] = np.linalg.norm(allB[i])
+
+
+
+def get_solovals():
+	n = 1e-6*np.nanmean(alln)	
+	nstd = 1e-6*np.nanstd(alln)
+	T = np.nanmean(allT)/(1.602e-19)
+	Tstd = np.nanstd(allT)/(1.602e-19)
+	v = 1e-3*np.nanmean(allvmags)
+	vstd = 1e-3*np.nanstd(allvmags)
+	B = 1e9*np.nanmean(allBmags)
+	Bstd = 1e9*np.nanstd(allBmags)
+	dB = 1e9*np.sqrt(np.nanmean(alldBsqrdmag))
+	dBstd = 1e9*np.sqrt(np.nanstd(alldBsqrdmag))
+
+	return n,nstd,T,Tstd,v,vstd,B,Bstd,dB,dBstd
+
+
+if (eventlist == enc23coronalhole_fast):
+	nsolo_fast,nstdsolo_fast,Tsolo_fast,Tstdsolo_fast,vsolo_fast,vstdsolo_fast,Bsolo_fast,Bstdsolo_fast,dBsolo_fast,dBstdsolo_fast = get_solovals()
+	print("Fast Variables")
+elif (eventlist == enc23coronalhole_slow):
+	nsolo_slow,nstdsolo_slow,Tsolo_slow,Tstdsolo_slow,vsolo_slow,vstdsolo_slow,Bsolo_slow,Bstdsolo_slow,dBsolo_slow,dBstdsolo_slow = get_solovals()
+	print("Slow Variables")
+else:
+	nsolo,nstdsolo,Tsolo,Tstdwind,vsolo,vstdsolo,Bsolo,Bstdsolo,dBsolo,dBstdsolo = get_solovals()
+	print("Variables")
 # %%
 
 allmagperpart = 6.242e18*(allBmags**2)/(2*mu0*alln)
