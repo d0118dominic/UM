@@ -167,12 +167,22 @@ ev1 = ['2025-03-28/19:30', '2025-04-03/14:50'] #Full interval
 ev1_reduced = ['2025-03-28/19:30', '2025-04-01/00:00'] #Full interval
 
 
-# enc23coronalhole_fast = [['2025-03-29/01:20','2025-04-01/16:20']] # Encounter 21
-enc23coronalhole_fast = [['2025-03-30/00:00','2025-04-01/00:00']] # Encounter 21
-enc23coronalhole_slow = [['2025-03-23/00:40','2025-03-24/05:20']] # Encounter 21
-enc23coronalhole_full = [['2025-03-23/00:40','2025-04-01/16:20']] # Encounter 21
+# enc23coronalhole_fast = [['2025-03-30/00:00','2025-04-01/00:00']] # Encounter 21
+# enc23coronalhole_slow = [['2025-03-23/00:40','2025-03-24/05:20']] # Encounter 21
 
-eventlist=enc23coronalhole_slow
+
+enc23coronalhole_fast = [['2025-03-29/01:20','2025-04-01/16:20']] # Encounter 21
+enc23coronalhole_slow = [['2025-04-04/00:00','2025-04-06/00:00']] # Encounter 21
+enc23coronalhole_bound = [['2025-03-26/00:00','2025-03-29/00:00']] # Encounter 21
+enc23coronalhole_full = [['2025-04-01/00:00','2025-04-09/12:00']] # Encounter 21
+
+enc23coronalhole_fast = [['2025-03-29/01:20','2025-04-01/16:20']] # Encounter 21
+enc23coronalhole_shoulder = [['2025-03-26/20:00','2025-03-28/12:00']] # Encounter 21
+enc23coronalhole_preceding = [['2025-03-23/18:00','2025-03-24/12:00']] # Encounter 21
+enc23coronalhole_trailing = [['2025-04-05/00:00','2025-04-07/00:00']] # Encounter 21
+
+
+eventlist=enc23coronalhole_trailing
 
 
 
@@ -196,8 +206,8 @@ alldBsqrdmag_list = []
 
 for i in range(len(eventlist)):
 	trange = eventlist[i]
-	mag_vars = pyspedas.projects.solo.mag(trange=trange, datatype='rtn-normal',get_support_data=True, time_clip=False)
-	swa_vars = pyspedas.projects.solo.swa(trange=trange, datatype='pas-grnd-mom',get_support_data=True, time_clip=False)    
+	mag_vars = pyspedas.projects.solo.mag(trange=trange, datatype='rtn-normal',get_support_data=True, time_clip=True,no_update=False)
+	swa_vars = pyspedas.projects.solo.swa(trange=trange, datatype='pas-grnd-mom',get_support_data=True, time_clip=True,no_update=False)    
 
 	Bvec_name = 'B_RTN'
 	B_name = Bvec_name
@@ -317,26 +327,44 @@ def get_solovals():
 	return n,nstd,T,Tstd,v,vstd,B,Bstd,dB,dBstd
 
 
+def get_solo_anisos():
+	betapar = allbeta_par
+	Tparperp = allTparperp
+	return betapar, Tparperp
+
+
+# if (eventlist == enc23coronalhole_fast):
+# 	nsolo_fast,nstdsolo_fast,Tsolo_fast,Tstdsolo_fast,vsolo_fast,vstdsolo_fast,Bsolo_fast,Bstdsolo_fast,dBsolo_fast,dBstdsolo_fast = get_solovals()
+# 	betaparssolo_fast, Tparperpsolo_fast = get_solo_anisos()
+# 	print("Fast Variables")
+# elif (eventlist == enc23coronalhole_slow):
+# 	nsolo_slow,nstdsolo_slow,Tsolo_slow,Tstdsolo_slow,vsolo_slow,vstdsolo_slow,Bsolo_slow,Bstdsolo_slow,dBsolo_slow,dBstdsolo_slow = get_solovals()
+# 	betaparssolo_slow, Tparperpsolo_slow = get_solo_anisos()
+# 	print("Slow Variables")
+# else:
+# 	nsolo,nstdsolo,Tsolo,Tstdsolo,vsolo,vstdsolo,Bsolo,Bstdsolo,dBsolo,dBstdsolo = get_solovals()
+# 	betaparssolo, Tparperpsolo = get_solo_anisos()
+# 	print("Variables")
 if (eventlist == enc23coronalhole_fast):
 	nsolo_fast,nstdsolo_fast,Tsolo_fast,Tstdsolo_fast,vsolo_fast,vstdsolo_fast,Bsolo_fast,Bstdsolo_fast,dBsolo_fast,dBstdsolo_fast = get_solovals()
+	betaparssolo_fast, Tparperpsolo_fast = get_solo_anisos()
 	print("Fast Variables")
-elif (eventlist == enc23coronalhole_slow):
-	nsolo_slow,nstdsolo_slow,Tsolo_slow,Tstdsolo_slow,vsolo_slow,vstdsolo_slow,Bsolo_slow,Bstdsolo_slow,dBsolo_slow,dBstdsolo_slow = get_solovals()
-	print("Slow Variables")
+elif (eventlist == enc23coronalhole_preceding):
+	nsolo_preceding,nstdsolo_preceding,Tsolo_preceding,Tstdsolo_preceding,vsolo_preceding,vstdsolo_preceding,Bsolo_preceding,Bstdsolo_preceding,dBsolo_preceding,dBstdsolo_preceding = get_solovals()
+	betaparssolo_preceding, Tparperpsolo_preceding = get_solo_anisos()
+	print("Preceding Variables")
+elif (eventlist == enc23coronalhole_trailing):
+	nsolo_trailing,nstdsolo_trailing,Tsolo_trailing,Tstdsolo_trailing,vsolo_trailing,vstdsolo_trailing,Bsolo_trailing,Bstdsolo_trailing,dBsolo_trailing,dBstdsolo_trailing = get_solovals()
+	betaparssolo_trailing, Tparperpsolo_trailing = get_solo_anisos()
+	print("Trailing Variables")
+elif (eventlist == enc23coronalhole_shoulder):
+	nsolo_shoulder,nstdsolo_shoulder,Tsolo_shoulder,Tstdsolo_shoulder,vsolo_shoulder,vstdsolo_shoulder,Bsolo_shoulder,Bstdsolo_shoulder,dBsolo_shoulder,dBstdsolo_shoulder = get_solovals()
+	betaparssolo_shoulder, Tparperpsolo_shoulder = get_solo_anisos()
+	print("Shoulder Variables")
 else:
-	nsolo,nstdsolo,Tsolo,Tstdwind,vsolo,vstdsolo,Bsolo,Bstdsolo,dBsolo,dBstdsolo = get_solovals()
+	nsolo,nstdsolo,Tsolo,Tstdsolo,vsolo,vstdsolo,Bsolo,Bstdsolo,dBsolo,dBstdsolo = get_solovals()
+	betaparssolo, Tparperpsolo = get_solo_anisos()
 	print("Variables")
-# %%
+# allmagperpart = 6.242e18*(allBmags**2)/(2*mu0*alln)
 
-allmagperpart = 6.242e18*(allBmags**2)/(2*mu0*alln)
-
-# %%
-
-
-# mask = allpositions >0
-brazilplot(1e3*allbeta_par, r'$\beta_\parallel$', r'$T_{\perp}/T_{\parallel}$', r'$v_x$')
-# %%
-
-# mask = 1e-3*allvmags >= 400
-brazilhist(1e-3*allvmags, z_label = r'$V \ (km/s)$',nbins=80,vmin=0,vmax=1000,count=False)
 # %%

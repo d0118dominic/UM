@@ -361,112 +361,21 @@ def get_residenergy(v,B,n,m): # vector dv & dB (Alfven units??)
 # %%
 # Get Mag Data
 
-sub_alfs =  [['2022-09-06/06:00','2022-09-06/16:00'], # 10 hrs Encounter 13
-			 ['2022-09-06/18:00','2022-09-07/12:00'], # 18 hrs Encounter 13
-			 ['2022-12-11/04:00','2022-12-11/16:00'], # 12 hrs Encounter 14
-			 ['2023-03-16/12:00','2023-03-17/06:00'], # 18 hrs Encounter 15
-			 ['2023-06-20/01:00','2023-06-21/01:00'], # 24 hrs Encounter 16
-			 ['2023-09-27/06:00','2023-09-27/15:00'], # 9 hrs Encounter 17
-			 ['2023-12-29/04:00','2023-12-29/14:00'], # 10 hrs Encounter 18
-			 ['2024-03-29/06:00','2024-03-29/21:00'], # 15 hrs Encounter 19
-			 ['2024-06-30/03:00','2024-06-30/18:00'], # 15 hrs Encounter 20
-			 ['2024-09-28/11:00','2024-09-28/18:00'], # 7 hrs Encounter 21
- 		     ['2024-12-24/00:00', '2024-12-25/00:00'], # 24 hours Encounter 22 
-	         ['2025-03-22/06:00', '2025-03-23/12:00'], # 30 hrs Encounter 23
-			 ]
 
-
-sup_alfs=	[['2022-09-07/18:00','2022-09-08/18:00'], # 24 hrs Encounter 13
-			 ['2022-12-10/01:00','2022-12-10/09:00'], # 8 hrs Encounter 14
-			 ['2023-03-16/00:00','2023-03-16/11:00'], # 11 hrs Encounter 15
-			 ['2023-06-24/00:00','2023-06-25/00:00'], # 24  hrs Encounter 16
-			 ['2023-09-28/20:00','2023-09-30/09:00'], # 37 hrs Encounter 17
-			 ['2023-12-25/14:00','2023-12-25/23:00'], # 9 hrs Encounter 18
-			 ['2024-04-01/10:00','2024-04-02/01:00'], # 15 hrs Encounter 19
-			 ['2024-07-01/20:00','2024-07-03/00:00'], # 28 hrs Encounter 20
-			 ['2024-10-03/00:00','2024-10-03/12:00'], # 12 hrs Encounter 21
-			 ['2025-03-21/00:00', '2025-03-22/03:00'], # 27 hrs Encounter 23
-			 ]
-
-
-near_alfs = [['2022-09-05/11:00','2022-09-05/17:00'], # 6 hrs Encounter 13
-			 ['2023-06-23/00:00','2023-06-23/18:00'], # 18 hrs Encounter 16
-			 ['2023-09-28/09:00','2023-09-28/18:00'], # 9 hrs Encounter 17
-			 ['2023-12-28/00:00','2023-12-29/00:00'], # 24 hrs Encounter 18
-			 ['2024-03-28/22:00','2024-03-29/05:00'], # 7 hrs Encounter 19
-			 ['2024-06-29/00:00','2024-06-29/09:00'], # 9 hrs Encounter 20 
-			 ['2024-10-01/15:00','2024-10-02/00:00'] # 9 hrs Encounter 21 
-			]
-
-
-
-#No CS crossings
-sup_alfs_alt=[['2022-09-07/18:00','2022-09-08/18:00'], # 24 hrs Encounter 13
-			 ['2022-12-10/01:00','2022-12-10/09:00'], # 8 hrs Encounter 14
-			 ['2023-03-16/06:00','2023-03-16/11:00'], # 5 hrs Encounter 15
-			 ['2023-06-24/09:00','2023-06-25/00:00'], # 15  hrs Encounter 16 ####
-			 ['2023-09-28/20:00','2023-09-30/09:00'], # 37 hrs Encounter 17
-			 ['2023-12-25/14:00','2023-12-25/23:00'], # 9 hrs Encounter 18
-			 ['2024-04-01/10:00','2024-04-02/01:00'], # 15 hrs Encounter 19
-			 ['2024-07-02/03:00','2024-07-03/00:00'], # 21 hrs Encounter 20
-			 ['2024-10-03/00:00','2024-10-03/12:00'], # 12 hrs Encounter 21
-			 ['2025-03-21/00:00', '2025-03-22/00:00'], # 27 hrs Encounter 23
-			 ]
-
-
-betaparlist = [['2024-03-25/04:00','2024-03-25/09:00'],
-			   ['2024-07-04/22:00','2024-07-05/00:00'],
-			   ['2024-09-25/05:00','2024-09-26/05:00'],
-			   ['2024-12-19/00:00', '2024-12-20/00:00'],
-			   ['2025-03-18/02:00', '2025-03-19/00:00'],
-			   ['2025-03-17/00:00', '2025-03-17/12:00'],
-			   ['2023-12-23/12:00','2023-12-24/00:00']]
-
-encounter13 = [['2022-09-03/00:00','2022-09-03/01:00'],['2022-09-03/02:00','2022-09-03/03:00']]
-# encounter13 = [['2022-09-01/00:00','2022-09-11/00:00'],['2022-09-03/00:00','2022-09-03/01:00']]
-
-encounter24 = [['2025-06-17/00:00', '2025-06-21/00:00'], ['2025-06-21/00:00', '2025-06-21/01:00']]
-enc23coronalhole = [['2025-03-22/20:10','2025-03-23/15:00']] # Encounter 21
-
-# enc23coronalhole_fast = [['2025-03-22/23:40','2025-03-23/04:00']] # Encounter 21
-enc23coronalhole_fast = [['2025-03-23/01:00','2025-03-23/04:00']] # Encounter 21
-enc23coronalhole_slow = [['2025-03-23/07:50','2025-03-23/14:00']] # Encounter 21
-# enc23 = [['2025-03-18/20:10','2025-03-25/00:20']] # Encounter 23
-
-# near_sups = [['2024-09-27/04:30','2024-09-27/06:30'], # 2 hr Encounter 21
-# 			 ['2024-10-03/23:00','2024-10-04/00:00'], # 1 hr Encounter 21
-# 			 ['2024-10-04/09:00','2024-10-04/10:00'], # 1 hr Encounter 21
-# 			 ['2024-06-29/04:45','2024-06-29/06:15'], # 1.5 hr Encounter 20
-# 			 ['2024-07-02/03:00','2024-07-02/08:00'], # 5 hr Encounter 20
-# 			 ['2024-03-28/03:30','2024-03-28/06:00'], # 2.5 hr Encounter 19
-# 			 ['2023-12-29/22:00','2023-12-30/03:00'], # 5 hrs Encounter 18
-# 			 ['2023-09-29/00:00','2023-09-29/06:00'], # 6 hrs Encounter 17
-# 			 ['2023-09-28/18:00','2023-09-28/21:00'], # 3 hrs Encounter 17
-# 			 ['2025-03-21/10:00', '2025-03-21/14:00'], # 4 hrs Encounter 23
-# 			 ]
-
-# near_subs = [['2024-09-27/07:30','2024-09-27/8:30'], # 1 hr Encounter 21
-# 			 ['2024-09-30/23:00','2024-10-01/01:00'],# 2 hr Encounter 21
-# 			 ['2024-06-29/16:00','2024-06-29/21:00'],# 5 hr Encounter 20
-# 			 ['2024-03-30/07:00','2024-03-30/11:00'], # 4 hr Encounter 19
-# 			 ['2023-12-28/12:00','2023-12-28/15:00'], # 3 hrs Encounter 18
-# 			 ]
-
-
-
-
-# longints = [['2025-06-15/00:00','2025-06-23/00:00'],['2025-03-18/00:00','2025-03-24/00:00']]
-# nears = near_subs+near_subs
 recent_perihelia = [['2024-09-29/00:00', '2024-10-01/12:00'], #E21
 					['2024-06-29/00:00', '2024-07-01/12:00'], #E20
 					['2024-03-29/00:00','2024-03-31/00:00'], #E19
-					['2023-12-28/00:00','2023-12-30/00:00']] #E18
+					['2023-12-28/00:00','2023-12-30/00:00'], #E18
+					['2023-09-27/00:00','2023-09-29/00:00'], #E17
+					['2023-06-20/00:00','2023-06-24/06:00']] #E16
 
 
 #Need to make a list of chosen Alfvenic & sub-alfvenic intervals
 #Most people choose a handful of intervals by eye
 
 
+event18 = ['2023-12-28/14:00','2023-12-28/16:00'], #E18
+event20 = ['2024-06-29/09:00','2024-06-29/14:00'], #E20
 # eventlist = subs
 
 # Alfven crossings (<2 hr)
@@ -477,24 +386,11 @@ recent_perihelia = [['2024-09-29/00:00', '2024-10-01/12:00'], #E21
 #                    ['2024-06-29/11:00', '2024-06-29/13:00']] # E20
 
 
-#eventlist = sub_alfs+sup_alfs+near_alfs
-# eventlist=near_alfs
-# eventlist = sup_alfs+sub_alfs+near_alfs
-# eventlist = sup_alfs_alt#+sub_alfs
-eventlist = sup_alfs_alt+sub_alfs+near_alfs+betaparlist
-# eventlist = [['2023-06-20/22:20','2023-06-20/22:40']]
-# eventlist = [['2023-06-20/21:30','2023-06-20/23:30']]
-eventlist = [recent_perihelia[2]]
-# eventlist = encounter24
-# eventlist = [['2022-09-06/18:00','2022-09-07/06:00']]
-# eventlist = [sub_alfs[1]]
+# eventlist = [recent_perihelia[3]]
+eventlist = [['2024-06-27/00:00', '2024-07-04/00:00']]
 
-# Sup-alfs with the large beta_par instability
-# 7 (July 1-2 2024, 21:00-03:00) (some large-scale Br reversal)
-# 9 (March 22 2025, 0-3:00) (might be the HCS)
-# 2 ( March 16 2023 0-4:00) (more big Br reversalss)
-# 3 (kinda) (June 24 2023 )
-
+allpositions=np.array([])
+allvelocities=np.empty((0,3))
 
 allBmags = np.array([])
 allvmags = np.array([])
@@ -538,7 +434,6 @@ allbeta_par = np.array([])
 allmagcomp = np.array([])
 
 allangles=np.array([])
-allpositions=np.array([])
 allmachs=np.array([])
 allSr=np.array([])
 allKr=np.array([])
@@ -588,7 +483,10 @@ for i in range(len(eventlist)):
 	phivals_name = 'psp_spi_PHI_VALS'
 	ephi_name = 'psp_spi_EFLUX_VS_PHI'
 	# voltages_name = 'psp_fld_l2_dfb_wf_dVdc_sc'
+
+	# Spacecraft Variables
 	position_name = 'psp_spi_SUN_DIST'
+	velocity_name = 'psp_spi_SC_VEL_RTN_SUN'
 
 	interpvar_name = vi_name
 	timeax = pytplot.get_data(interpvar_name).times
@@ -618,6 +516,7 @@ for i in range(len(eventlist)):
 	tinterpol(ephi_name,interpvar_name,newname='ephi')
 	# tinterpol(voltages_name,interpvar_name,newname='voltages')
 	tinterpol(position_name,interpvar_name,newname='position')
+	tinterpol(velocity_name,interpvar_name,newname='velocity')
 	
 	Bvecs = 1e-9*reform(pytplot.get_data('B'))
 	Bxyz = 1e-9*reform(pytplot.get_data('Bxyz'))
@@ -630,7 +529,8 @@ for i in range(len(eventlist)):
 	ephi = reform(pytplot.get_data('ephi')).T
 	# PiTensor = ni*TiTensor
 	# voltages = reform(get_data('voltages'))
-	position = reform(get_data('position'))/695700 #Solar radii
+	position = reform(get_data('position'))/695700 # Solar radii
+	velocity = reform(get_data('velocity')) # km/s
 
 
 
@@ -711,7 +611,7 @@ for i in range(len(eventlist)):
 
 
 	# FOV filtering
-	FOV_filter()
+	# FOV_filter()
 
 	# FOV_flagged()
 
@@ -909,6 +809,7 @@ for i in range(len(eventlist)):
 	allangles = np.concat([allangles,angle_reduced])
 	allmachs = np.concat([allmachs,ma_mean])
 	allpositions = np.concat([allpositions,position])
+	allvelocities = np.concat([allvelocities,velocity])
 	
 	allvr = np.concat([allvr,vr])
 	allvt = np.concat([allvt,vt])
@@ -988,16 +889,11 @@ def get_pspvals():
 	return n,nstd,T,Tstd,v,vstd,B,Bstd,dB,dBstd
 
 
+#%%
+plt.plot(allmachs,color='b')
+plt.axhline(y=1,color='k')
+plt.ylabel('Ma')
 
-if (eventlist == enc23coronalhole_fast):
-	npsp_fast,nstdpsp_fast,Tpsp_fast,Tstdpsp_fast,vpsp_fast,vstdpsp_fast,Bpsp_fast,Bstdpsp_fast,dBpsp_fast,dBstdpsp_fast = get_pspvals()
-	print("Fast Variables")
-elif (eventlist == enc23coronalhole_slow):
-	npsp_slow,nstdpsp_slow,Tpsp_slow,Tstdpsp_slow,vpsp_slow,vstdpsp_slow,Bpsp_slow,Bstdpsp_slow,dBpsp_slow,dBstdpsp_slow = get_pspvals()
-	print("Slow Variables")
-else:
-	npsp,nstdpsp,Tpsp,Tstdpsp,vpsp,vstdpsp,Bpsp,Bstdpsp,dBpsp,dBstdpsp = get_pspvals()
-	print("Variables")
 # %%
 
 allmagperpart = 6.242e18*(allBmags**2)/(2*mu0*alln)

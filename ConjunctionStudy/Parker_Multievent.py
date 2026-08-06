@@ -429,8 +429,18 @@ encounter24 = [['2025-06-17/00:00', '2025-06-21/00:00'], ['2025-06-21/00:00', '2
 enc23coronalhole = [['2025-03-22/20:10','2025-03-23/15:00']] # Encounter 21
 
 # enc23coronalhole_fast = [['2025-03-22/23:40','2025-03-23/04:00']] # Encounter 21
+# enc23coronalhole_slow = [['2025-03-23/07:50','2025-03-23/14:00']] # Encounter 21
 enc23coronalhole_fast = [['2025-03-23/01:00','2025-03-23/04:00']] # Encounter 21
-enc23coronalhole_slow = [['2025-03-23/07:50','2025-03-23/14:00']] # Encounter 21
+enc23coronalhole_slow = [['2025-03-22/19:00','2025-03-22/22:00']] # Encounter 21
+enc23coronalhole_bound = [['2025-03-23/06:00','2025-03-23/09:00']] # Encounter 21
+enc23coronalhole_full = [['2025-03-22/12:00','2025-03-24/00:00']] # Encounter 21
+enc23coronalhole_full = [['2025-03-23/00:00','2025-03-24/00:00']] # Encounter 21
+
+
+enc23coronalhole_fast = [['2025-03-23/01:00','2025-03-23/04:00']] # Encounter 21
+enc23coronalhole_shoulder = [['2025-03-23/04:30','2025-03-23/06:00']] # Encounter 21
+enc23coronalhole_trailing = [['2025-03-22/19:00','2025-03-22/22:00']] # Encounter 21
+enc23coronalhole_preceding = [['2025-03-23/14:00','2025-03-23/18:00']] # Encounter 21
 # enc23 = [['2025-03-18/20:10','2025-03-25/00:20']] # Encounter 23
 
 # near_sups = [['2024-09-27/04:30','2024-09-27/06:30'], # 2 hr Encounter 21
@@ -485,7 +495,7 @@ eventlist = sup_alfs_alt+sub_alfs+near_alfs+betaparlist
 # eventlist = [['2023-06-20/22:20','2023-06-20/22:40']]
 # eventlist = [['2023-06-20/21:30','2023-06-20/23:30']]
 eventlist = [recent_perihelia[2]]
-# eventlist = encounter24
+eventlist = enc23coronalhole_preceding
 # eventlist = [['2022-09-06/18:00','2022-09-07/06:00']]
 # eventlist = [sub_alfs[1]]
 
@@ -987,19 +997,52 @@ def get_pspvals():
 
 	return n,nstd,T,Tstd,v,vstd,B,Bstd,dB,dBstd
 
+def get_psp_anisos():
+	betapar = allbeta_par
+	Tparperp = allTparperp
+	return betapar, Tparperp
 
 
+# if (eventlist == enc23coronalhole_fast):
+# 	npsp_fast,nstdpsp_fast,Tpsp_fast,Tstdpsp_fast,vpsp_fast,vstdpsp_fast,Bpsp_fast,Bstdpsp_fast,dBpsp_fast,dBstdpsp_fast = get_pspvals()
+# 	betaparspsp_fast, Tparperppsp_fast = get_psp_anisos()
+# 	print("Fast Variables")
+# elif (eventlist == enc23coronalhole_slow):
+# 	npsp_slow,nstdpsp_slow,Tpsp_slow,Tstdpsp_slow,vpsp_slow,vstdpsp_slow,Bpsp_slow,Bstdpsp_slow,dBpsp_slow,dBstdpsp_slow = get_pspvals()
+# 	betaparspsp_slow, Tparperppsp_slow = get_psp_anisos()
+# 	print("Slow Variables")
+# else:
+# 	npsp,nstdpsp,Tpsp,Tstdpsp,vpsp,vstdpsp,Bpsp,Bstdpsp,dBpsp,dBstdpsp = get_pspvals()
+# 	betaparspsp, Tparperppsp = get_psp_anisos()
+# 	print("Variables")
 if (eventlist == enc23coronalhole_fast):
 	npsp_fast,nstdpsp_fast,Tpsp_fast,Tstdpsp_fast,vpsp_fast,vstdpsp_fast,Bpsp_fast,Bstdpsp_fast,dBpsp_fast,dBstdpsp_fast = get_pspvals()
+	betaparspsp_fast, Tparperppsp_fast = get_psp_anisos()
 	print("Fast Variables")
-elif (eventlist == enc23coronalhole_slow):
-	npsp_slow,nstdpsp_slow,Tpsp_slow,Tstdpsp_slow,vpsp_slow,vstdpsp_slow,Bpsp_slow,Bstdpsp_slow,dBpsp_slow,dBstdpsp_slow = get_pspvals()
-	print("Slow Variables")
+elif (eventlist == enc23coronalhole_preceding):
+	npsp_preceding,nstdpsp_preceding,Tpsp_preceding,Tstdpsp_preceding,vpsp_preceding,vstdpsp_preceding,Bpsp_preceding,Bstdpsp_preceding,dBpsp_preceding,dBstdpsp_preceding = get_pspvals()
+	betaparspsp_preceding, Tparperppsp_preceding = get_psp_anisos()
+	print("Preceding Variables")
+elif (eventlist == enc23coronalhole_trailing):
+	npsp_trailing,nstdpsp_trailing,Tpsp_trailing,Tstdpsp_trailing,vpsp_trailing,vstdpsp_trailing,Bpsp_trailing,Bstdpsp_trailing,dBpsp_trailing,dBstdpsp_trailing = get_pspvals()
+	betaparspsp_trailing, Tparperppsp_trailing = get_psp_anisos()
+	print("Trailing Variables")
+elif (eventlist == enc23coronalhole_shoulder):
+	npsp_shoulder,nstdpsp_shoulder,Tpsp_shoulder,Tstdpsp_shoulder,vpsp_shoulder,vstdpsp_shoulder,Bpsp_shoulder,Bstdpsp_shoulder,dBpsp_shoulder,dBstdpsp_shoulder = get_pspvals()
+	betaparspsp_shoulder, Tparperppsp_shoulder = get_psp_anisos()
+	print("Shoulder Variables")
 else:
 	npsp,nstdpsp,Tpsp,Tstdpsp,vpsp,vstdpsp,Bpsp,Bstdpsp,dBpsp,dBstdpsp = get_pspvals()
+	betaparspsp, Tparperppsp = get_psp_anisos()
 	print("Variables")
-# %%
 
+
+
+
+
+
+
+#%%
 allmagperpart = 6.242e18*(allBmags**2)/(2*mu0*alln)
 
 #%%

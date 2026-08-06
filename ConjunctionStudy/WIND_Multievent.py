@@ -187,10 +187,20 @@ ev1 = ['2025-03-26/00:30', '2025-03-30/13:40'] #Full interval
 ev1_reduced = ['2025-03-28/00:00', '2025-03-31/00:00'] #Full interval
 
 # enc23coronalhole_fast = [['2025-03-26/14:50','2025-03-29/04:20']] # Encounter 21
-enc23coronalhole_fast = [['2025-03-27/12:00','2025-03-28/00:00']] # Encounter 21
-enc23coronalhole_slow = [['2025-03-26/02:20','2025-03-26/11:20']] # Encounter 21
+# enc23coronalhole_slow = [['2025-03-26/02:20','2025-03-26/11:20']] # Encounter 21
 
-eventlist=enc23coronalhole_slow
+enc23coronalhole_fast = [['2025-03-27/12:00','2025-03-28/00:00']] # Encounter 21
+enc23coronalhole_slow = [['2025-03-30/12:00','2025-03-31/12:00']] # Encounter 21
+enc23coronalhole_bound = [['2025-03-26/06:00','2025-03-27/12:00']] # Encounter 21
+enc23coronalhole_full = [['2025-03-26/00:00','2025-03-27/12:00']] # Encounter 21
+
+
+enc23coronalhole_fast = [['2025-03-27/12:00','2025-03-28/00:00']] # Encounter 21
+enc23coronalhole_shoulder = [['2025-03-26/14:00','2025-03-27/00:00']] # Encounter 21
+enc23coronalhole_trailing = [['2025-03-30/12:00','2025-03-31/12:00']] # Encounter 21
+enc23coronalhole_preceding = [['2025-03-25/22:00','2025-03-26/13:00']] # Encounter 21
+
+eventlist=enc23coronalhole_shoulder
 
 
 allB_list = []
@@ -359,33 +369,50 @@ def get_windvals():
 
 	return n,nstd,T,Tstd,v,vstd,B,Bstd,dB,dBstd
 
+def get_wind_anisos():
+	betapar = allbeta_par
+	Tparperp = allTparperp
+	return betapar, Tparperp
 
-
+# if (eventlist == enc23coronalhole_fast):
+# 	nwind_fast,nstdwind_fast,Twind_fast,Tstdwind_fast,vwind_fast,vstdwind_fast,Bwind_fast,Bstdwind_fast,dBwind_fast,dBstdwind_fast = get_windvals()
+# 	betaparswind_fast, Tparperpwind_fast = get_wind_anisos()
+# 	print("Fast Variables")
+# elif (eventlist == enc23coronalhole_slow):
+# 	nwind_slow,nstdwind_slow,Twind_slow,Tstdwind_slow,vwind_slow,vstdwind_slow,Bwind_slow,Bstdwind_slow,dBwind_slow,dBstdwind_slow = get_windvals()
+# 	betaparswind_slow, Tparperpwind_slow = get_wind_anisos()
+# 	print("Slow Variables")
+# else:
+# 	nwind,nstdwind,Twind,Tstdwind,vwind,vstdwind,Bwind,Bstdwind,dBwind,dBstdwind = get_windvals()
+# 	betaparswind, Tparperpwind = get_wind_anisos()
+# 	print("Variables")
 if (eventlist == enc23coronalhole_fast):
 	nwind_fast,nstdwind_fast,Twind_fast,Tstdwind_fast,vwind_fast,vstdwind_fast,Bwind_fast,Bstdwind_fast,dBwind_fast,dBstdwind_fast = get_windvals()
+	betaparswind_fast, Tparperpwind_fast = get_wind_anisos()
 	print("Fast Variables")
-elif (eventlist == enc23coronalhole_slow):
-	nwind_slow,nstdwind_slow,Twind_slow,Tstdwind_slow,vwind_slow,vstdwind_slow,Bwind_slow,Bstdwind_slow,dBwind_slow,dBstdwind_slow = get_windvals()
-	print("Slow Variables")
+elif (eventlist == enc23coronalhole_preceding):
+	nwind_preceding,nstdwind_preceding,Twind_preceding,Tstdwind_preceding,vwind_preceding,vstdwind_preceding,Bwind_preceding,Bstdwind_preceding,dBwind_preceding,dBstdwind_preceding = get_windvals()
+	betaparswind_preceding, Tparperpwind_preceding = get_wind_anisos()
+	print("Preceding Variables")
+elif (eventlist == enc23coronalhole_trailing):
+	nwind_trailing,nstdwind_trailing,Twind_trailing,Tstdwind_trailing,vwind_trailing,vstdwind_trailing,Bwind_trailing,Bstdwind_trailing,dBwind_trailing,dBstdwind_trailing = get_windvals()
+	betaparswind_trailing, Tparperpwind_trailing = get_wind_anisos()
+	print("Trailing Variables")
+elif (eventlist == enc23coronalhole_shoulder):
+	nwind_shoulder,nstdwind_shoulder,Twind_shoulder,Tstdwind_shoulder,vwind_shoulder,vstdwind_shoulder,Bwind_shoulder,Bstdwind_shoulder,dBwind_shoulder,dBstdwind_shoulder = get_windvals()
+	betaparswind_shoulder, Tparperpwind_shoulder = get_wind_anisos()
+	print("Shoulder Variables")
 else:
 	nwind,nstdwind,Twind,Tstdwind,vwind,vstdwind,Bwind,Bstdwind,dBwind,dBstdwind = get_windvals()
+	betaparswind, Tparperpwind = get_wind_anisos()
 	print("Variables")
-#%%
-# Normalized arrays
-Tvals = np.array([9,38,72])
-nvals = np.array([49.6,25.1,23.4])
-vvals = np.array([354,602,459])
-Pvals = nvals*Tvals
-nvsqrdvals = nvals*(vvals**2)
-plt.plot(Pvals/Pvals[0],marker='o',linestyle='-',label = r'$P/P_0$')
-plt.plot(Tvals/Tvals[0],marker='o',linestyle='-',label = r'$T/T_0$')
-plt.plot(nvals/nvals[0],marker='o',linestyle='-',label = r'$n/n_0$')
-plt.plot(nvsqrdvals/nvsqrdvals[0],marker='o',linestyle='-',label = r'$nv^2/nv^2_0$')
-plt.axhline(y=1,linestyle='dashed',color='k')
-plt.legend()
-
-allmagperpart = 6.242e18*(allBmags**2)/(2*mu0*alln)
 # %%
+
+
+
+
+
+
 plt.hist(allangles,bins=80)
 plt.xlim(0,180)
 plt.yscale('log')
@@ -529,24 +556,24 @@ def get_fastvars():
 
 
 def get_slowvars():
-	# narray = 1e6*np.array([4346,216,10])
-	narray = 1e6*np.array([4346,216,25])
-	# n_stdarray = 1e6*np.array([781,48,5])
-	n_stdarray = 1e6*np.array([781,48,8])
-	# Tarray = 1.602e-19*np.array([69,8,18])
-	Tarray = 1.602e-19*np.array([69,8,15])
+	# # narray = 1e6*np.array([4346,216,10])
+	# narray = 1e6*np.array([4346,216,25])
+	# # n_stdarray = 1e6*np.array([781,48,5])
+	# n_stdarray = 1e6*np.array([781,48,8])
+	# # Tarray = 1.602e-19*np.array([69,8,18])
+	# Tarray = 1.602e-19*np.array([69,8,15])
+	# # T_stdarray = 1.602e-19*np.array([20,3,3])
 	# T_stdarray = 1.602e-19*np.array([20,3,3])
-	T_stdarray = 1.602e-19*np.array([20,3,3])
-	# varray = 1e3*np.array([228,253,421])
-	varray = 1e3*np.array([228,253,371])
-	# v_stdarray = 1e3*np.array([20,30,85])
-	v_stdarray = 1e3*np.array([20,30,29])
-	Barray = 1e-9*np.array([1172,35,16])
-	B_stdarray = 1e-9*np.array([187, 4, 5])
-	dB_array = 1e-9*np.array([263, 17, 10])
-	dB_stdarray = 1e-9*np.array([162, 9, 5])
-	rarray = np.array([0.05/3,0.3/3,1/3])
-	# rarray = np.array([1,1,1])  # For now, just use the actual values for each spacecraft.  Can normalize later if needed.
+	# # varray = 1e3*np.array([228,253,421])
+	# varray = 1e3*np.array([228,253,371])
+	# # v_stdarray = 1e3*np.array([20,30,85])
+	# v_stdarray = 1e3*np.array([20,30,29])
+	# Barray = 1e-9*np.array([1172,35,16])
+	# B_stdarray = 1e-9*np.array([187, 4, 5])
+	# dB_array = 1e-9*np.array([263, 17, 10])
+	# dB_stdarray = 1e-9*np.array([162, 9, 5])
+	# rarray = np.array([0.05/3,0.3/3,1/3])
+	# # rarray = np.array([1,1,1])  # For now, just use the actual values for each spacecraft.  Can normalize later if needed.
 
 
 
