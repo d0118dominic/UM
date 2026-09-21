@@ -434,13 +434,14 @@ enc23coronalhole_fast = [['2025-03-23/01:00','2025-03-23/04:00']] # Encounter 21
 enc23coronalhole_slow = [['2025-03-22/19:00','2025-03-22/22:00']] # Encounter 21
 enc23coronalhole_bound = [['2025-03-23/06:00','2025-03-23/09:00']] # Encounter 21
 enc23coronalhole_full = [['2025-03-22/12:00','2025-03-24/00:00']] # Encounter 21
-enc23coronalhole_full = [['2025-03-23/00:00','2025-03-24/00:00']] # Encounter 21
+enc23coronalhole_full = [['2025-03-22/18:00','2025-03-23/18:00']] # Encounter 21
 
 
 enc23coronalhole_fast = [['2025-03-23/01:00','2025-03-23/04:00']] # Encounter 21
 enc23coronalhole_shoulder = [['2025-03-23/04:30','2025-03-23/06:00']] # Encounter 21
 enc23coronalhole_trailing = [['2025-03-22/19:00','2025-03-22/22:00']] # Encounter 21
-enc23coronalhole_preceding = [['2025-03-23/14:00','2025-03-23/18:00']] # Encounter 21
+enc23coronalhole_preceding = [['2025-03-23/13:30','2025-03-23/16:15']] # Encounter 21
+enc23coronalhole_rarefaction = [['2025-03-22/22:30','2025-03-23/00:30']] # Encounter 21
 # enc23 = [['2025-03-18/20:10','2025-03-25/00:20']] # Encounter 23
 
 # near_sups = [['2024-09-27/04:30','2024-09-27/06:30'], # 2 hr Encounter 21
@@ -495,7 +496,7 @@ eventlist = sup_alfs_alt+sub_alfs+near_alfs+betaparlist
 # eventlist = [['2023-06-20/22:20','2023-06-20/22:40']]
 # eventlist = [['2023-06-20/21:30','2023-06-20/23:30']]
 eventlist = [recent_perihelia[2]]
-eventlist = enc23coronalhole_preceding
+eventlist = enc23coronalhole_fast
 # eventlist = [['2022-09-06/18:00','2022-09-07/06:00']]
 # eventlist = [sub_alfs[1]]
 
@@ -578,9 +579,9 @@ alldSp_norm = np.array([])
 
 for i in range(len(eventlist)):
 	trange=eventlist[i]
-	Bfld_vars = pyspedas.projects.psp.fields(trange=trange, level='l2', time_clip=True)
-	swp_vars = pyspedas.projects.psp.spi(trange=trange,level='l3',get_support_data=True,time_clip=True)
-	qtn_vars = pyspedas.projects.psp.fields(trange=trange,level='l3',datatype='sqtn_rfs_V1V2',time_clip=True)
+	Bfld_vars = pyspedas.projects.psp.fields(trange=trange, level='l2', time_clip=True,no_update=True)
+	swp_vars = pyspedas.projects.psp.spi(trange=trange,level='l3',get_support_data=True,time_clip=True,no_update=True)
+	qtn_vars = pyspedas.projects.psp.fields(trange=trange,level='l3',datatype='sqtn_rfs_V1V2',time_clip=True,no_update=True)
 	# alph_vars = pyspedas.projects.psp.spi(trange=trange,level='l3',datatype='sf0a_l3_mom',time_clip=True)
 	# voltages_vars = pyspedas.projects.psp.fields(trange=trange, datatype='dfb_wf_dvdc', level='l2',time_clip=True)
 	#On DC datatype: 'sqn_rfs_V1V2 has some kind of electron density & core temp, but looks weird
@@ -624,8 +625,8 @@ for i in range(len(eventlist)):
 	tinterpol(Ti_name,interpvar_name,newname='Ti')
 	tinterpol(ni_name,interpvar_name,newname='ni')
 	tinterpol(TiTensor_name,interpvar_name,newname='TiTensor')
-	tinterpol(phivals_name,interpvar_name,newname='phivals')
-	tinterpol(ephi_name,interpvar_name,newname='ephi')
+	# tinterpol(phivals_name,interpvar_name,newname='phivals')
+	# tinterpol(ephi_name,interpvar_name,newname='ephi')
 	# tinterpol(voltages_name,interpvar_name,newname='voltages')
 	tinterpol(position_name,interpvar_name,newname='position')
 	
@@ -636,8 +637,8 @@ for i in range(len(eventlist)):
 	ni = 1e6*reform(pytplot.get_data('ni'))
 	Ti = 1.602e-19*reform(pytplot.get_data('Ti'))
 	TiTensor = 1.602e-19*reform(pytplot.get_data('TiTensor')) #Comes in xyz
-	phis = reform(pytplot.get_data('phivals'))
-	ephi = reform(pytplot.get_data('ephi')).T
+	# phis = reform(pytplot.get_data('phivals'))
+	# ephi = reform(pytplot.get_data('ephi')).T
 	# PiTensor = ni*TiTensor
 	# voltages = reform(get_data('voltages'))
 	position = reform(get_data('position'))/695700 #Solar radii
@@ -721,7 +722,7 @@ for i in range(len(eventlist)):
 
 
 	# FOV filtering
-	FOV_filter()
+	# FOV_filter()
 
 	# FOV_flagged()
 
@@ -901,8 +902,8 @@ for i in range(len(eventlist)):
 		# sigma_r[i] = get_residenergy(vivecs[i],Bvecs[i],ni[i],mi)
 		# sigma_c[i] = get_crosshelicity(vivecs[i],Bvecs[i],ni[i],mi)
 
-		sigma_r[i] = get_residenergy(dv[i],dB[i],ni[i],mi)
-		sigma_c[i] = get_crosshelicity(dv[i],dB[i],ni[i],mi)
+		sigma_r[i] = abs(get_residenergy(dv[i],dB[i],ni[i],mi))
+		sigma_c[i] = abs(get_crosshelicity(dv[i],dB[i],ni[i],mi))
 
 
 
@@ -994,14 +995,27 @@ def get_pspvals():
 	Bstd = 1e9*np.nanstd(allBmags)
 	dB = 1e9*np.nanmean(alldBmag)
 	dBstd = 1e9*np.nanstd(alldBmag)
+	ch = np.nanmean(allcrosshelicity)
+	chstd = np.nanstd(allcrosshelicity)
+	re = np.nanmean(allresidenergy)
+	restd = np.nanstd(allresidenergy)
 
-	return n,nstd,T,Tstd,v,vstd,B,Bstd,dB,dBstd
+	return n,nstd,T,Tstd,v,vstd,B,Bstd,dB,dBstd,ch,chstd,re,restd
 
 def get_psp_anisos():
 	betapar = allbeta_par
 	Tparperp = allTparperp
 	return betapar, Tparperp
 
+def get_CGLvars():
+	allCpar = (alln*kb*allTpar*allBmags**2)/(alln**3)
+	allCperp = (alln*kb*allTperp)/(alln*allBmags)
+
+	Cpar = np.nanmean(allCpar)
+	Cperp = np.nanmean(allCperp)
+	Cparstd = np.nanstd(allCpar)
+	Cperpstd = np.nanstd(allCperp)
+	return Cpar,Cparstd,Cperp,Cperpstd
 
 # if (eventlist == enc23coronalhole_fast):
 # 	npsp_fast,nstdpsp_fast,Tpsp_fast,Tstdpsp_fast,vpsp_fast,vstdpsp_fast,Bpsp_fast,Bstdpsp_fast,dBpsp_fast,dBstdpsp_fast = get_pspvals()
@@ -1016,26 +1030,35 @@ def get_psp_anisos():
 # 	betaparspsp, Tparperppsp = get_psp_anisos()
 # 	print("Variables")
 if (eventlist == enc23coronalhole_fast):
-	npsp_fast,nstdpsp_fast,Tpsp_fast,Tstdpsp_fast,vpsp_fast,vstdpsp_fast,Bpsp_fast,Bstdpsp_fast,dBpsp_fast,dBstdpsp_fast = get_pspvals()
+	npsp_fast,nstdpsp_fast,Tpsp_fast,Tstdpsp_fast,vpsp_fast,vstdpsp_fast,Bpsp_fast,Bstdpsp_fast,dBpsp_fast,dBstdpsp_fast,chpsp_fast,chstdpsp_fast,repsp_fast,restdpsp_fast = get_pspvals()
 	betaparspsp_fast, Tparperppsp_fast = get_psp_anisos()
+	Cparpsp_fast,Cparstdpsp_fast,Cperppsp_fast,Cperpstdpsp_fast = get_CGLvars()
 	print("Fast Variables")
 elif (eventlist == enc23coronalhole_preceding):
-	npsp_preceding,nstdpsp_preceding,Tpsp_preceding,Tstdpsp_preceding,vpsp_preceding,vstdpsp_preceding,Bpsp_preceding,Bstdpsp_preceding,dBpsp_preceding,dBstdpsp_preceding = get_pspvals()
+	npsp_preceding,nstdpsp_preceding,Tpsp_preceding,Tstdpsp_preceding,vpsp_preceding,vstdpsp_preceding,Bpsp_preceding,Bstdpsp_preceding,dBpsp_preceding,dBstdpsp_preceding,chpsp_preceding,chstdpsp_preceding,repsp_preceding,restdpsp_preceding = get_pspvals()
 	betaparspsp_preceding, Tparperppsp_preceding = get_psp_anisos()
+	Cparpsp_preceding,Cparstdpsp_preceding,Cperppsp_preceding,Cperpstdpsp_preceding = get_CGLvars()
 	print("Preceding Variables")
 elif (eventlist == enc23coronalhole_trailing):
-	npsp_trailing,nstdpsp_trailing,Tpsp_trailing,Tstdpsp_trailing,vpsp_trailing,vstdpsp_trailing,Bpsp_trailing,Bstdpsp_trailing,dBpsp_trailing,dBstdpsp_trailing = get_pspvals()
+	npsp_trailing,nstdpsp_trailing,Tpsp_trailing,Tstdpsp_trailing,vpsp_trailing,vstdpsp_trailing,Bpsp_trailing,Bstdpsp_trailing,dBpsp_trailing,dBstdpsp_trailing,chpsp_trailing,chstdpsp_trailing,repsp_trailing,restdpsp_trailing = get_pspvals()
 	betaparspsp_trailing, Tparperppsp_trailing = get_psp_anisos()
+	Cparpsp_trailing,Cparstdpsp_trailing,Cperppsp_trailing,Cperpstdpsp_trailing = get_CGLvars()
 	print("Trailing Variables")
 elif (eventlist == enc23coronalhole_shoulder):
-	npsp_shoulder,nstdpsp_shoulder,Tpsp_shoulder,Tstdpsp_shoulder,vpsp_shoulder,vstdpsp_shoulder,Bpsp_shoulder,Bstdpsp_shoulder,dBpsp_shoulder,dBstdpsp_shoulder = get_pspvals()
+	npsp_shoulder,nstdpsp_shoulder,Tpsp_shoulder,Tstdpsp_shoulder,vpsp_shoulder,vstdpsp_shoulder,Bpsp_shoulder,Bstdpsp_shoulder,dBpsp_shoulder,dBstdpsp_shoulder,chpsp_shoulder,chstdpsp_shoulder,repsp_shoulder,restdpsp_shoulder = get_pspvals()
 	betaparspsp_shoulder, Tparperppsp_shoulder = get_psp_anisos()
+	Cparpsp_shoulder,Cparstdpsp_shoulder,Cperppsp_shoulder,Cperpstdpsp_shoulder = get_CGLvars()
 	print("Shoulder Variables")
+elif (eventlist == enc23coronalhole_rarefaction):
+	npsp_rarefaction,nstdpsp_rarefaction,Tpsp_rarefaction,Tstdpsp_rarefaction,vpsp_rarefaction,vstdpsp_rarefaction,Bpsp_rarefaction,Bstdpsp_rarefaction,dBpsp_rarefaction,dBstdpsp_rarefaction,chpsp_rarefaction,chstdpsp_rarefaction,repsp_rarefaction,restdpsp_rarefaction = get_pspvals()
+	betaparspsp_rarefaction, Tparperppsp_rarefaction = get_psp_anisos()
+	Cparpsp_rarefaction,Cparstdpsp_rarefaction,Cperppsp_rarefaction,Cperpstdpsp_rarefaction = get_CGLvars()
+	print("Rarefaction Variables")
 else:
-	npsp,nstdpsp,Tpsp,Tstdpsp,vpsp,vstdpsp,Bpsp,Bstdpsp,dBpsp,dBstdpsp = get_pspvals()
+	npsp,nstdpsp,Tpsp,Tstdpsp,vpsp,vstdpsp,Bpsp,Bstdpsp,dBpsp,dBstdpsp,chpsp,chstdpsp,repsp,restdpsp = get_pspvals()
 	betaparspsp, Tparperppsp = get_psp_anisos()
+	Cparpsp,Cparstdpsp,Cperppsp,Cperpstdpsp = get_CGLvars()
 	print("Variables")
-
 
 
 

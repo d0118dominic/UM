@@ -93,6 +93,31 @@ def get_vecmean(vec,interval):   # Vector mean
 	return vec_mean
 
 
+def get_vecs (t_windows,vec):
+    #vx = V[:, 0]
+    vec_array = []
+    # protect against going out of bounds from the array 
+    for i in range(len(t_windows)):
+        vec_small = get_vecmean(vec, int(np.round(t_windows[i]*secondint)))
+        vec_array.append(vec_small)
+    return np.array(vec_array)
+
+def get_pm(B):
+	pm = 0.5*(mu0**-1)*np.linalg.norm(B)**2
+	return pm
+def get_pth(n,T):
+	pth = n*T
+	return pth
+
+def get_vals (t_windows,var):
+    #vx = V[:, 0]
+    var_array = []
+    # protect against going out of bounds from the array 
+    for i in range(len(t_windows)):
+        var_small = get_mean(var, int(np.round(t_windows[i]*secondint)))
+        var_array.append(var_small)
+    return var_array
+
 def get_scaldeltas (t_windows,scalvar):
     #vx = V[:, 0]
     delta_var_array,mean_var_array = [],[]
@@ -157,12 +182,22 @@ def sw_km_to_Re(Vsw):
 	#distances 
 	return Re_min
 
-# Gets the angle between two vectors
+def get_parperps(n,T,B):  #B ant T tensor coord systems need to match for this
+	trace = T[0] + T[1] + T[2]
+	term1 = (T[0]*B[0]**2 + T[1]*B[1]**2 + T[2]*B[2]**2)/(np.linalg.norm(B)**2)
+	term2 = 2*(T[3]*B[0]*B[1] + T[4]*B[0]*B[2] + T[5]*B[1]*B[2])/(np.linalg.norm(B)**2)
+	Tpar = term1+term2
+	Tperp=0.5*(trace-Tpar)
+	Ppar = n*Tpar
+	Pperp = n*Tperp
+	return Tpar,Tperp,Ppar,Pperp
+
+# Gets the angle between two vectors (radian version)
 def get_angle(vec,meanvec):
 	term1 = np.dot(vec,meanvec)
 	term2 = np.dot(np.linalg.norm(vec),np.linalg.norm(meanvec))
 	term3 = term1/term2
-	term4 = np.arccos(term3)*180/np.pi
+	term4 = np.arccos(term3) 
 	return term4
 
 # This gets all the angles across t_windows
@@ -232,18 +267,25 @@ def y_error_bars(var,counts,p):
 		result = var * p
 		error = y_error.append(result)
 	return error 
-#%%
+
 recent_perihelia = [['2024-09-29/00:00', '2024-10-01/00:00'], #E21
 					['2024-06-29/00:00', '2024-07-01/12:00'], #E20
 					['2024-03-29/00:00','2024-03-31/00:00'], #E19
-					['2023-12-28/00:00','2023-12-30/00:00'], #E18
+					['2023-12-24/00:00','2024-01-03/00:00'], #E18
 					['2023-09-27/00:00','2023-09-29/00:00'], #E17
-					['2023-06-20/00:00','2023-06-24/06:00']] #E16
+					['2023-06-19/00:00','2023-06-25/00:00']] #E16
 
 
-# Specific Gradients for individual look
+# Specific Gradients for individual look?
 event18 = ['2023-12-28/14:00','2023-12-28/16:00'], #E18
-event20 = ['2024-06-29/09:00','2024-06-29/14:00'], #E20
+event20 = ['2024-06-29/00:00','2024-06-29/14:00'], #E20
+
+
+
+event = ['2022-03-21/00:00','2022-12-14/00:00'], #E20
+event = [recent_perihelia[3]]
+
+
 
 
 # Alfven crossings (<2 hr)
@@ -254,13 +296,16 @@ event20 = ['2024-06-29/09:00','2024-06-29/14:00'], #E20
 #                    ['2024-06-29/11:00', '2024-06-29/13:00']] # E20
 
 
-eventlist = [recent_perihelia[0]]
+# eventlist = ['2023-12-28/00:00','2023-12-30/00:00']
 # eventlist = [['202-21/00:00', '2024-06-24/00:00']]
+eventlist = [['2025-03-21/00:00','2025-03-25/00:00']]
+['2023-12-24/00:00','2024-01-03/00:00'], #E18
+eventlist = [recent_perihelia[3]]
 
 # Choose number of seconds for base, factors of 10 up until on order of a day or so
 base_sec = 12
 # t_windows = [base_sec,10*base_sec,100*base_sec, 1e3*base_sec]
-t_windows = [10*base_sec,100*base_sec, 1e3*base_sec,1e4*base_sec]
+t_windows = [base_sec,10*base_sec,100*base_sec, 1e3*base_sec, 1e4*base_sec]#,1e4*base_sec]
 # 12 sec, 2 min, 20 min, 200 min (3.33 hrs), 33.3 hrs  
 
 
@@ -287,6 +332,7 @@ for name in vector_names:
 
 for i in range(len(eventlist)):
     trange = eventlist[i]
+    # trange = event
 
     Bfld_vars = pyspedas.projects.psp.fields(trange=trange, level='l2', time_clip=True,no_update=True)
     swp_vars = pyspedas.projects.psp.spi(trange=trange,level='l3',get_support_data=True,time_clip=True,no_update=True)
@@ -358,8 +404,8 @@ for i in range(len(eventlist)):
     velocity = reform(get_data('velocity')) # km/s
     vpsp,rpsp = velocity,position
     
-
-
+    vshift = vpsp - vivecs # Difference between parker and bulk proton speed
+    
     # va = np.zeros_like(ni)
     # for j in range(len(timeax)):
     #     va[j] = get_va(Bvecs[j],ni[j], mi)
@@ -367,11 +413,31 @@ for i in range(len(eventlist)):
    # va, theta_PTB, energy fluxes, etc. 
    # After defining, they can be fed in to the delta functions 
     
-    va,vth,vsw = np.zeros_like(ni),np.zeros_like(va),np.zeros_like(va)
+    ma,va,vth,vsw,theta_ptb = np.zeros_like(ni),np.zeros_like(ni),np.zeros_like(ni),np.zeros_like(ni),np.zeros_like(ni)
+    Tpar,Tperp,Ppar,Pperp,beta = np.zeros_like(ni),np.zeros_like(ni),np.zeros_like(ni),np.zeros_like(ni),np.zeros_like(ni)
+    Pmag,Pth,beta,betapar,Tparperp = np.zeros_like(ni), np.zeros_like(ni),np.zeros_like(ni),np.zeros_like(ni),np.zeros_like(ni)
+    
     for j in range(len(ni)):
         va[j] = get_va(Bvecs[j],ni[j],mi)
-        vth[j] = get_vth(Ti[j],mi)
+        vth[j] = get_vth(Ti[j],mi) 
+        theta_ptb[j] = get_angle(vshift[j],Bvecs[j])
+        ma[j] = np.linalg.norm(vivecs[j])/va[j]
+        Pmag[j] = get_pm(Bvecs[j])
+        Pth[j] = get_pth(ni[j],Ti[j])
+        beta[j] = Pth[j]/Pmag[j]
+        Tpar[j],Tperp[j],Ppar[j],Pperp[j] = get_parperps(ni[j],TiTensor[j],Bxyz[j])
+        Tparperp[j] = Tpar[j]/Tperp[j]
+        betapar[j] = Ppar[j]/Pmag[j]
+        # Temp components
     vsw = vivecs[:,0]
+
+    # Alginment parameter of shifted psp velocity.  
+    # Ranges from 0 (orth to B) to 1 (aligned with B) 
+    lpar_over_l = [abs(np.cos(theta)) for theta in theta_ptb]
+    lperp_over_l = [abs(np.sin(theta)) for theta in theta_ptb]
+    lperp_over_lpar = [abs(np.tan(theta)) for theta in theta_ptb]    
+    
+    # theta = np.arccos(brnorm)*180/np.pi
     ### OR ....
 
     # use the vector means to derive mor complex quantities after (maybe more efficient?)
@@ -380,17 +446,233 @@ for i in range(len(eventlist)):
     # dBvecs,Bmeans = get_vecdeltas(t_windows,Bvecs)
     # dvvecs,vmeans = get_vecdeltas(t_windows,vivecs)
     # dvpsp,vpspmeans = get_vecdeltas(t_windows,vpsp)
+    # dvshift,vshiftmeans = get_vecdeltas(t_windows,vshift)
+    # temp anisotropies
+    # Enthalpy Flux density vectors
+    # Ion Agyrotropy??
 
-    # Get Deltas and Means (Scalars)
-    #dn,nmeans = get_scaldeltas(t_windows,ni)
-    #dT,Tmeans = get_scaldeltas(t_windows,Ti)
-    #dva,vameans = get_scaldeltas(t_windows,va)
-    #dvth,vthmeans = get_scaldeltas(t_windows,vth)
-    #dvsw,vswmeans = get_scaldeltas(t_windows,vsw)
- 
+   # Get Deltas and Means (Scalars)
+    dn,nmeans = get_scaldeltas(t_windows,ni)
+    dT,Tmeans = get_scaldeltas(t_windows,Ti)
+    dva,vameans = get_scaldeltas(t_windows,va)
+    dma,mameans = get_scaldeltas(t_windows,ma)
+    dvth,vthmeans = get_scaldeltas(t_windows,vth)
+    # # dvsw,vswmeans = get_scaldeltas(t_windows,vsw)
 
+    lperp_over_l = get_vals(t_windows,lperp_over_l)
+    lpar_over_l = get_vals(t_windows,lpar_over_l)
+    lperp_over_lpar = get_vals(t_windows,lperp_over_lpar)
+
+    v = get_vecs(t_windows,vshift) 
+    Tpar = get_vals(t_windows,Tpar)
+    Tperp = get_vals(t_windows,Tperp)
+    Tparperp = get_vals(t_windows,Tparperp)
+    betapar = get_vals(t_windows,betapar)
+    # Something with Alphas? (idk their resolution tho)
+
+
+    # Here, l correctly corresponds to small avg
+    # Since we're using the t_windows starting from zero
+    # vmeans already represents the large averages.
+    l = np.zeros([len(t_windows[:-1]),len(ni)])
+    for t in range(len(t_windows[:-1])):
+        for j in range(len(ni)):
+            l[t][j] = np.linalg.norm(v[t][j])*t_windows[t]
+
+
+
+# What next??  What am I looking for?
+
+
+
+    # l = [*t for t in t_windows[:-1]]
     # Means
     # Bvecs_mean = get_vecmean(Bvecs,int(np.round(n_sec*secondint)))
      
         # ma_mean = get_mean(v_mag/va,minutes*meaninterval)
-# %%
+# %
+# 
+#%%
+import pandas as pd
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+
+def plot_vs_time(timeax, var, ylabel='', title='', ax=None):
+    """Plot var against timeax (unix epoch seconds), with a proper datetime x-axis."""
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(10, 4))
+
+    time_dt = pd.to_datetime(timeax, unit='s')
+    ax.plot(time_dt, var)
+
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
+    ax.xaxis.set_major_locator(mdates.AutoDateLocator())
+    ax.set_xlabel('Time (UTC)')
+    ax.set_ylabel(ylabel)
+    ax.set_title(title)
+
+    return ax
+
+# Call it:
+ax = plot_vs_time(timeax, Tpar[0], ylabel='n$_i$ [m$^{-3}$]', title='Ion Density')
+plt.gcf().autofmt_xdate()
+plt.show()
+
+
+#%%
+
+def plot_vs_time(timeax, var, ylabel='', title='', ax=None):
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(10, 4))
+
+    time_dt = pd.to_datetime(timeax, unit='s')
+    ax.plot(time_dt, var)
+
+    ax.xaxis.set_major_locator(mdates.AutoDateLocator())
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d'))
+    ax.set_xlabel('Time (UTC)')
+    ax.set_ylabel(ylabel)
+    ax.set_title(title)
+
+    return ax
+
+# Call it:
+ax = plot_vs_time(timeax, Tpar[0], ylabel='n$_i$ [m$^{-3}$]', title='Ion Density')
+plt.gcf().autofmt_xdate()
+plt.show()
+#%%
+
+def plot_vs_time(timeax, vars_dict, ylabel='', title='', ax=None,
+                  colors=('darkblue', 'limegreen', 'orange', 'red')):
+    """Plot one or more variables against timeax (unix epoch seconds) on the same axes.
+    
+    vars_dict: dict mapping {label: array}, e.g. {'n_i': ni, 'n_e': ne}
+    """
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(7, 7))
+
+    time_dt = pd.to_datetime(timeax, unit='s')
+
+    for i, (label, var) in enumerate(vars_dict.items()):
+        ax.plot(time_dt, var, label=label, color=colors[i % len(colors)])
+
+    ax.xaxis.set_major_locator(mdates.AutoDateLocator())
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d'))
+    ax.set_xlabel('Time (UTC)')
+    ax.set_ylabel(ylabel)
+    ax.set_title(title)
+    ax.legend()
+
+    return ax
+
+# Call it:
+ax = plot_vs_time(timeax, {'Small Scales (~34 $Mm$)': mameans[0], 'Medium Scales (~0.5 $R_s$)': mameans[1], 'Large Scales (~5 $R_s$)': mameans[2], 'Very Large Scales (~50 $R_s$)': mameans[3] },
+                   ylabel='Alfvénic Mach Number ($M_A$)', title='Encounter 18')
+ax.axhline(y=1, color='k')
+ax.axhline(y=0.6, color='k',linestyle='dashed')
+ax.axhline(y=1.6, color='k',linestyle='dashed')
+ax.set_ylim([0.2, 10])
+ax.set_xlabel('Date')
+ax.set_yscale('log')
+plt.gcf().autofmt_xdate()
+plt.show()
+
+#%%
+
+
+#%%
+ax = plot_vs_time(timeax, {'Small Scales (~34 $Mm$)': lperp_over_lpar[1], 'Medium Scales (~0.5 $R_s$)': lperp_over_lpar[2], 'Large Scales (~5 $R_s$)': lperp_over_lpar[3], 'Very Large Scales (~50 $R_s$)': lperp_over_lpar[4] },
+                   ylabel='$\ell_\perp/\ell_\parallel$', title='Encounter 18')
+ax.axhline(y=1, color='k')
+# ax.axhline(y=0.6, color='k',linestyle='dashed')
+# ax.axhline(y=1.6, color='k',linestyle='dashed')
+ax.set_ylim([0.01, 100])
+ax.set_xlabel('Date')
+ax.set_yscale('log')
+plt.gcf().autofmt_xdate()
+plt.show()
+#%%
+ax = plot_vs_time(timeax, {'Small Scales (~34 $Mm$)': vthmeans[0], 'Medium Scales (~0.5 $R_s$)': vthmeans[1], 'Large Scales (~5 $R_s$)': vthmeans[2], 'Very Large Scales (~50 $R_s$)': vthmeans[3] },
+                   ylabel='Thermal Velocity ($v_{th}$)', title='Encounter 18')
+# ax.axhline(y=1, color='k')
+# ax.axhline(y=0.6, color='k',linestyle='dashed')
+# ax.axhline(y=1.6, color='k',linestyle='dashed')
+# ax.set_ylim([0.2, 10])
+ax.set_xlabel('Date')
+ax.set_yscale('log')
+plt.gcf().autofmt_xdate()
+plt.show()
+#%%
+ax = plot_vs_time(timeax, {'Small Scales (~34 $Mm$)': 1/Tparperp[1], 'Medium Scales (~0.5 $R_s$)': 1/Tparperp[2], 'Large Scales (~5 $R_s$)': 1/Tparperp[3], 'Very Large Scales (~50 $R_s$)': 1/Tparperp[4] },
+                   ylabel='$T_\perp/T_\parallel$', title='Encounter 18')
+ax.axhline(y=1, color='k')
+# ax.axhline(y=0.6, color='k',linestyle='dashed')
+# ax.axhline(y=1.6, color='k',linestyle='dashed')
+# ax.set_ylim([0.2, 10])
+ax.set_xlabel('Date')
+ax.set_yscale('log')
+plt.ylim(0.1,10)
+plt.gcf().autofmt_xdate()
+plt.show()
+
+#%%
+ax = plot_vs_time(timeax, {'Small Scales (~34 $Mm$)': Tmeans[0], 'Medium Scales (~0.5 $R_s$)': Tmeans[1], 'Large Scales (~5 $R_s$)': Tmeans[2], 'Very Large Scales (~50 $R_s$)': Tmeans[3] },
+                   ylabel='Temperature ($T$)', title='Encounter 18')
+# ax.axhline(y=1, color='k')
+# ax.axhline(y=0.6, color='k',linestyle='dashed')
+# ax.axhline(y=1.6, color='k',linestyle='dashed')
+# ax.set_ylim([0.2, 10])
+ax.set_xlabel('Date')
+ax.set_yscale('log')
+plt.gcf().autofmt_xdate()
+plt.show()
+
+
+#%%
+
+ax = plot_vs_time(timeax, {'Very Small Scales (~3.5 $Mm$)': abs(dva[0]/vameans[0]), 'Small Scales (~34 $Mm$)': abs(dva[1]/vameans[1]), 'Medium Scales (~0.5 $R_s$)': abs(dva[2]/vameans[2]), 'Large Scales (~5 $R_s$)': abs(dva[3]/vameans[3]) },
+                   ylabel='$\delta v_A/v_A$', title='Encounter 18',colors=('grey','darkblue', 'limegreen', 'orange', 'red'))
+ax.set_xlabel('Date')
+ax.set_yscale('linear')
+ax.set_ylim([0, 0.6])
+plt.gcf().autofmt_xdate()
+plt.show()
+
+#%%
+
+ax = plot_vs_time(timeax, {'Very Small Scales (~3.5 $Mm$)': abs(dvth[0]/vthmeans[0]), 'Small Scales (~34 $Mm$)': abs(dvth[1]/vthmeans[1]), 'Medium Scales (~0.5 $R_s$)': abs(dvth[2]/vthmeans[2]), 'Large Scales (~5 $R_s$)': abs(dvth[3]/vthmeans[3]) },
+                   ylabel='$\delta v_{th}/v_{th}$', title='Encounter 18',colors=('grey','darkblue', 'limegreen', 'orange', 'red'))
+ax.set_xlabel('Date')
+ax.set_yscale('linear')
+ax.set_ylim([0, 0.6])
+plt.gcf().autofmt_xdate()
+plt.show()
+#%%
+
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.stats import binned_statistic_2d
+from matplotlib.colors import ListedColormap
+import matplotlib.cm as cm
+import matplotlib.colors as colors
+
+# plt.hist2d(Tparperp[0][dvva[0]>=0.05],histtype='step',bins=100)
+plt.hist2d(mameans[3][dvva[0]>=0.05],dvva[0][dvva[0]>0.05],bins=100)
+# plt.hist(Tparperp[1][dvva[1]>=0.05],histtype='step',bins=100)
+# plt.hist(Tparperp[2][dvva[2]>=0.05],histtype='step',bins=100)
+# plt.hist(Tparperp[3][dvva[3]>=0.05],histtype='step',bins=100)
+plt.yscale('log')
+plt.xlim(0.1,1.6)
+
+
+
+
+
+
+
+
+
+
+
+
+

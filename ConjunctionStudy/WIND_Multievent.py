@@ -189,18 +189,19 @@ ev1_reduced = ['2025-03-28/00:00', '2025-03-31/00:00'] #Full interval
 # enc23coronalhole_fast = [['2025-03-26/14:50','2025-03-29/04:20']] # Encounter 21
 # enc23coronalhole_slow = [['2025-03-26/02:20','2025-03-26/11:20']] # Encounter 21
 
-enc23coronalhole_fast = [['2025-03-27/12:00','2025-03-28/00:00']] # Encounter 21
-enc23coronalhole_slow = [['2025-03-30/12:00','2025-03-31/12:00']] # Encounter 21
-enc23coronalhole_bound = [['2025-03-26/06:00','2025-03-27/12:00']] # Encounter 21
-enc23coronalhole_full = [['2025-03-26/00:00','2025-03-27/12:00']] # Encounter 21
+# enc23coronalhole_fast = [['2025-03-27/12:00','2025-03-28/00:00']] # Encounter 21
+# enc23coronalhole_slow = [['2025-03-30/12:00','2025-03-31/12:00']] # Encounter 21
+# enc23coronalhole_bound = [['2025-03-26/06:00','2025-03-27/12:00']] # Encounter 21
+# enc23coronalhole_full = [['2025-03-26/00:00','2025-03-27/12:00']] # Encounter 21
 
 
 enc23coronalhole_fast = [['2025-03-27/12:00','2025-03-28/00:00']] # Encounter 21
 enc23coronalhole_shoulder = [['2025-03-26/14:00','2025-03-27/00:00']] # Encounter 21
 enc23coronalhole_trailing = [['2025-03-30/12:00','2025-03-31/12:00']] # Encounter 21
 enc23coronalhole_preceding = [['2025-03-25/22:00','2025-03-26/13:00']] # Encounter 21
+enc23coronalhole_rarefaction = [['2025-03-28/18:00','2025-03-30/00:00']] # Encounter 21
 
-eventlist=enc23coronalhole_shoulder
+eventlist=enc23coronalhole_fast
 
 
 allB_list = []
@@ -220,6 +221,8 @@ alldn_list = []
 alldT_list = []
 alldvsqrdmag_list = []
 alldBsqrdmag_list = []
+allcrosshelicity_list = []
+allresidenergy_list = []
 
 # allB = np.array([])
 # allv = np.array([])
@@ -235,15 +238,18 @@ alldBsqrdmag_list = []
 for i in range(len(eventlist)):
 	trange = eventlist[i]
 
-	ion_vars = pyspedas.projects.wind.swe(trange=trange,datatype='h1',time_clip=True)
-	electron_vars = pyspedas.projects.wind.swe(trange=trange,datatype='h5',time_clip=True)
+	ion_vars = pyspedas.projects.wind.swe(trange=trange,datatype='h1',time_clip=True,no_update=True)
+	electron_vars = pyspedas.projects.wind.swe(trange=trange,datatype='h5',time_clip=True,no_update=True)
 	# sms_vars = pyspedas.projects.wind.sms(trange=trange, datatype='k0')
-	mfi_vars = pyspedas.projects.wind.mfi(trange=trange,time_clip=True)
+	mfi_vars = pyspedas.projects.wind.mfi(trange=trange,time_clip=True,no_update=True)
 	B_name='BGSE'
 	# ni_name='N_elec'
 	ni_name='Proton_Np_moment'
 	# vi_name = 'U_eGSE'
 	vi_name = 'Proton_V_moment'
+	vx_name = 'Proton_VX_moment'
+	vy_name = 'Proton_VY_moment'
+	vz_name = 'Proton_VZ_moment'
 	pos_name = 'DIST' # Distance from earth, in units of earth radii.  1 Re ~ 4.3e-5 AU
 	Ptensor_name = 'P_eGSE'
 	Tscalar_name = 'T_elec'
@@ -258,6 +264,9 @@ for i in range(len(eventlist)):
 	tinterpol(Ptensor_name, interpvar_name, newname='PTensor')
 	tinterpol(ni_name, interpvar_name, newname='ni')
 	tinterpol(vi_name, interpvar_name, newname='vi')
+	tinterpol(vx_name, interpvar_name, newname='vx')
+	tinterpol(vy_name, interpvar_name, newname='vy')
+	tinterpol(vz_name, interpvar_name, newname='vz')
 	tinterpol(W_name, interpvar_name, newname='W')
 	tinterpol(Wpar_name, interpvar_name, newname='Wpar')
 	tinterpol(Wperp_name, interpvar_name, newname='Wperp')
@@ -266,6 +275,9 @@ for i in range(len(eventlist)):
 	PiTensor = 1e-1 * reform(pytplot.get_data('PTensor'))
 	ni = 1e6 * reform(pytplot.get_data('ni'))
 	vi = 1e3 * reform(pytplot.get_data('vi'))
+	vx = 1e3 * reform(pytplot.get_data('vx'))
+	vy = 1e3 * reform(pytplot.get_data('vy'))
+	vz = 1e3 * reform(pytplot.get_data('vz'))
 	# T = 1.602e-19*(8.617e-5)*reform(pytplot.get_data('T'))
 	W = 1e3*reform(pytplot.get_data('W'))
 	Wpar = 1e3*reform(pytplot.get_data('Wpar'))
@@ -273,6 +285,8 @@ for i in range(len(eventlist)):
 	T = (mi*W**2)/(2*kb)
 	Tpar = (mi*Wpar**2)/(2*kb)
 	Tperp = (mi*Wperp**2)/(2*kb)
+
+	vivecs = np.array([vx,vy,vz]).T
 
 	# Tpar = np.zeros_like(Bvecs[:, 0])
 	# Tperp = np.zeros_like(Tpar)
@@ -282,18 +296,18 @@ for i in range(len(eventlist)):
 	beta_par = np.zeros_like(Tpar)
 	angle = np.zeros_like(Tpar)
 	dB,dB_norm = np.zeros_like(Bvecs), np.zeros_like(Bvecs)
-	dv,dv_norm = np.zeros_like(vi), np.zeros_like(vi)
+	dv,dv_norm = np.zeros_like(vivecs), np.zeros_like(vivecs)
 	dvsqrdmag,dvsqrdmag_norm = np.zeros_like(Tpar), np.zeros_like(Tpar)
 	dBsqrdmag,dBsqrdmag_norm = np.zeros_like(Tpar), np.zeros_like(Tpar)
 	dn,dn_norm = np.zeros_like(ni), np.zeros_like(ni)
 	dT,dT_norm = np.zeros_like(T), np.zeros_like(T)
-
+	sigma_c,sigma_r = np.zeros_like(ni),np.zeros_like(ni)
 
 
 	minutes = 60
 	# Means
 	Bvecs_mean = get_vecmean(Bvecs,minutes*meaninterval)
-	# vivecs_mean = get_vecmean(vi,minutes*meaninterval)
+	vivecs_mean = get_vecmean(vivecs,minutes*meaninterval)
 	n_mean = get_mean(ni,minutes*meaninterval)
 	v_mean = get_mean(vi,minutes*meaninterval)
 	T_mean = get_mean(T,minutes*meaninterval)
@@ -306,11 +320,13 @@ for i in range(len(eventlist)):
 		beta_par[j] = (3/2)*ni[j]*kb*Tpar[j]/P_mag[j]
 		angle[j] = get_angle(Bvecs[j], Bvecs_mean[j])
 		dB[j],dB_norm[j] = get_delta(Bvecs[j], Bvecs_mean[j])
-		# dv[j],dv_norm[j] = get_delta(vi[j], vivecs_mean[j])
+		dv[j],dv_norm[j] = get_delta(vivecs[j], vivecs_mean[j])
 		dn[j],dn_norm[j] = get_deltascalar(ni[j], n_mean[j])
 		dT[j],dT_norm[j] = get_deltascalar(T[j], T_mean[j])
 		dvsqrdmag[j],dvsqrdmag_norm[j] = get_deltascalar(np.linalg.norm(vi[j])**2, np.linalg.norm(vivecs_mean[j])**2)
 		dBsqrdmag[j],dBsqrdmag_norm[j] = get_deltascalar(np.linalg.norm(Bvecs[j])**2, np.linalg.norm(Bvecs_mean[j])**2)
+		sigma_r[j] = get_residenergy(dv[j],dB[j],ni[j],mi)
+		sigma_c[j] = get_crosshelicity(dv[j],dB[j],ni[j],mi)
 
 	
 	allB_list.append(Bvecs)
@@ -324,11 +340,13 @@ for i in range(len(eventlist)):
 	allTparperp_list.append(Tpar / Tperp)
 	allangles_list.append(angle)
 	alldB_list.append(dB)
-	# alldv_list.append(dv)
+	alldv_list.append(dv)
 	alldn_list.append(dn)
 	alldT_list.append(dT)
 	alldvsqrdmag_list.append(dvsqrdmag)
 	alldBsqrdmag_list.append(dBsqrdmag)
+	allcrosshelicity_list.append(abs(sigma_c))
+	allresidenergy_list.append(abs(sigma_r))
 
 allB = np.concatenate(allB_list, axis=0)
 allv = np.concatenate(allv_list, axis=0)
@@ -342,18 +360,19 @@ allTperp = np.concatenate(allTperp_list, axis=0)
 allTparperp = np.concatenate(allTparperp_list, axis=0)
 allangles = np.concatenate(allangles_list, axis=0)
 alldB = np.concatenate(alldB_list, axis=0)
-# alldv = np.concatenate(alldv_list, axis=0)
+alldv = np.concatenate(alldv_list, axis=0)
 alldn = np.concatenate(alldn_list, axis=0)
 alldT = np.concatenate(alldT_list, axis=0)
 alldvsqrdmag = np.concatenate(alldvsqrdmag_list, axis=0)
 alldBsqrdmag = np.concatenate(alldBsqrdmag_list, axis=0)
+allcrosshelicity = np.concatenate(allcrosshelicity_list,axis=0)
+allresidenergy = np.concatenate(allresidenergy_list,axis=0)
 
 allvmags = allv
 allBmags = np.zeros_like(allB[:,0])
 for i in range(len(allv)):
 	# allvmags[i] = np.linalg.norm(allv[i])
 	allBmags[i] = np.linalg.norm(allB[i])
-
 
 def get_windvals():
 	n = 1e-6*np.nanmean(alln)	
@@ -366,14 +385,27 @@ def get_windvals():
 	Bstd = 1e9*np.nanstd(allBmags)
 	dB = 1e9*np.sqrt(np.nanmean(alldBsqrdmag))
 	dBstd = 1e9*np.sqrt(np.nanstd(alldBsqrdmag))
+	ch = np.nanmean(allcrosshelicity)
+	chstd = np.nanstd(allcrosshelicity)
+	re = np.nanmean(allresidenergy)
+	restd = np.nanstd(allresidenergy)
 
-	return n,nstd,T,Tstd,v,vstd,B,Bstd,dB,dBstd
+	return n,nstd,T,Tstd,v,vstd,B,Bstd,dB,dBstd,ch,chstd,re,restd
 
 def get_wind_anisos():
 	betapar = allbeta_par
 	Tparperp = allTparperp
 	return betapar, Tparperp
 
+def get_CGLvars():
+	allCpar = (alln*kb*allTpar*allBmags**2)/(alln**3)
+	allCperp = (alln*kb*allTperp)/(alln*allBmags)
+
+	Cpar = np.nanmean(allCpar)
+	Cperp = np.nanmean(allCperp)
+	Cparstd = np.nanstd(allCpar)
+	Cperpstd = np.nanstd(allCperp)
+	return Cpar,Cparstd,Cperp,Cperpstd
 # if (eventlist == enc23coronalhole_fast):
 # 	nwind_fast,nstdwind_fast,Twind_fast,Tstdwind_fast,vwind_fast,vstdwind_fast,Bwind_fast,Bstdwind_fast,dBwind_fast,dBstdwind_fast = get_windvals()
 # 	betaparswind_fast, Tparperpwind_fast = get_wind_anisos()
@@ -387,23 +419,28 @@ def get_wind_anisos():
 # 	betaparswind, Tparperpwind = get_wind_anisos()
 # 	print("Variables")
 if (eventlist == enc23coronalhole_fast):
-	nwind_fast,nstdwind_fast,Twind_fast,Tstdwind_fast,vwind_fast,vstdwind_fast,Bwind_fast,Bstdwind_fast,dBwind_fast,dBstdwind_fast = get_windvals()
+	nwind_fast,nstdwind_fast,Twind_fast,Tstdwind_fast,vwind_fast,vstdwind_fast,Bwind_fast,Bstdwind_fast,dBwind_fast,dBstdwind_fast,chwind_fast,chstdwind_fast,rewind_fast,restdwind_fast = get_windvals()
 	betaparswind_fast, Tparperpwind_fast = get_wind_anisos()
+	Cparwind_fast,Cparstdwind_fast,Cperpwind_fast,Cperpstdwind_fast = get_CGLvars()
 	print("Fast Variables")
 elif (eventlist == enc23coronalhole_preceding):
-	nwind_preceding,nstdwind_preceding,Twind_preceding,Tstdwind_preceding,vwind_preceding,vstdwind_preceding,Bwind_preceding,Bstdwind_preceding,dBwind_preceding,dBstdwind_preceding = get_windvals()
+	nwind_preceding,nstdwind_preceding,Twind_preceding,Tstdwind_preceding,vwind_preceding,vstdwind_preceding,Bwind_preceding,Bstdwind_preceding,dBwind_preceding,dBstdwind_preceding,chwind_preceding,chstdwind_preceding,rewind_preceding,restdwind_preceding = get_windvals()
 	betaparswind_preceding, Tparperpwind_preceding = get_wind_anisos()
 	print("Preceding Variables")
 elif (eventlist == enc23coronalhole_trailing):
-	nwind_trailing,nstdwind_trailing,Twind_trailing,Tstdwind_trailing,vwind_trailing,vstdwind_trailing,Bwind_trailing,Bstdwind_trailing,dBwind_trailing,dBstdwind_trailing = get_windvals()
+	nwind_trailing,nstdwind_trailing,Twind_trailing,Tstdwind_trailing,vwind_trailing,vstdwind_trailing,Bwind_trailing,Bstdwind_trailing,dBwind_trailing,dBstdwind_trailing,chwind_trailing,chstdwind_trailing,rewind_trailing,restdwind_trailing = get_windvals()
 	betaparswind_trailing, Tparperpwind_trailing = get_wind_anisos()
 	print("Trailing Variables")
 elif (eventlist == enc23coronalhole_shoulder):
-	nwind_shoulder,nstdwind_shoulder,Twind_shoulder,Tstdwind_shoulder,vwind_shoulder,vstdwind_shoulder,Bwind_shoulder,Bstdwind_shoulder,dBwind_shoulder,dBstdwind_shoulder = get_windvals()
+	nwind_shoulder,nstdwind_shoulder,Twind_shoulder,Tstdwind_shoulder,vwind_shoulder,vstdwind_shoulder,Bwind_shoulder,Bstdwind_shoulder,dBwind_shoulder,dBstdwind_shoulder,chwind_shoulder,chstdwind_shoulder,rewind_shoulder,restdwind_shoulder = get_windvals()
 	betaparswind_shoulder, Tparperpwind_shoulder = get_wind_anisos()
 	print("Shoulder Variables")
+elif (eventlist == enc23coronalhole_rarefaction):
+	nwind_rarefaction,nstdwind_rarefaction,Twind_rarefaction,Tstdwind_rarefaction,vwind_rarefaction,vstdwind_rarefaction,Bwind_rarefaction,Bstdwind_rarefaction,dBwind_rarefaction,dBstdwind_rarefaction,chwind_rarefaction,chstdwind_rarefaction,rewind_rarefaction,restdwind_rarefaction = get_windvals()
+	betaparswind_rarefaction, Tparperpwind_rarefaction = get_wind_anisos()
+	print("Rarefaction Variables")
 else:
-	nwind,nstdwind,Twind,Tstdwind,vwind,vstdwind,Bwind,Bstdwind,dBwind,dBstdwind = get_windvals()
+	nwind,nstdwind,Twind,Tstdwind,vwind,vstdwind,Bwind,Bstdwind,dBwind,dBstdwind,chwind,chstdwind,rewind,restdwind = get_windvals()
 	betaparswind, Tparperpwind = get_wind_anisos()
 	print("Variables")
 # %%

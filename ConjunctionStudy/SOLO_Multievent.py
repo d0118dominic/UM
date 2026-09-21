@@ -174,15 +174,19 @@ ev1_reduced = ['2025-03-28/19:30', '2025-04-01/00:00'] #Full interval
 enc23coronalhole_fast = [['2025-03-29/01:20','2025-04-01/16:20']] # Encounter 21
 enc23coronalhole_slow = [['2025-04-04/00:00','2025-04-06/00:00']] # Encounter 21
 enc23coronalhole_bound = [['2025-03-26/00:00','2025-03-29/00:00']] # Encounter 21
-enc23coronalhole_full = [['2025-04-01/00:00','2025-04-09/12:00']] # Encounter 21
+enc23coronalhole_full = [['2025-03-23/12:00','2025-04-07/06:00']] # Encounter 21
 
 enc23coronalhole_fast = [['2025-03-29/01:20','2025-04-01/16:20']] # Encounter 21
 enc23coronalhole_shoulder = [['2025-03-26/20:00','2025-03-28/12:00']] # Encounter 21
 enc23coronalhole_preceding = [['2025-03-23/18:00','2025-03-24/12:00']] # Encounter 21
 enc23coronalhole_trailing = [['2025-04-05/00:00','2025-04-07/00:00']] # Encounter 21
+enc23coronalhole_rarefaction = [['2025-04-02/00:00','2025-04-04/00:00']] # Encounter 21
 
+# enc23coronalhole_preceding = [['2025-03-22/18:0
+# 0','2025-03-25/12:00']] # Encounter 21
 
 eventlist=enc23coronalhole_trailing
+
 
 
 
@@ -203,11 +207,13 @@ alldn_list = []
 alldT_list = []
 alldvsqrdmag_list = []
 alldBsqrdmag_list = []
+allcrosshelicity_list = []
+allresidenergy_list = []
 
 for i in range(len(eventlist)):
 	trange = eventlist[i]
-	mag_vars = pyspedas.projects.solo.mag(trange=trange, datatype='rtn-normal',get_support_data=True, time_clip=True,no_update=False)
-	swa_vars = pyspedas.projects.solo.swa(trange=trange, datatype='pas-grnd-mom',get_support_data=True, time_clip=True,no_update=False)    
+	mag_vars = pyspedas.projects.solo.mag(trange=trange, datatype='rtn-normal',get_support_data=False, time_clip=True,no_update=True)
+	swa_vars = pyspedas.projects.solo.swa(trange=trange, datatype='pas-grnd-mom',get_support_data=False, time_clip=True,no_update=True)    
 
 	Bvec_name = 'B_RTN'
 	B_name = Bvec_name
@@ -245,6 +251,7 @@ for i in range(len(eventlist)):
 	dBsqrdmag,dBsqrdmag_norm = np.zeros_like(Tpar), np.zeros_like(Tpar)
 	dn,dn_norm = np.zeros_like(ni), np.zeros_like(ni)
 	dT,dT_norm = np.zeros_like(T), np.zeros_like(T)
+	sigma_c,sigma_r = np.zeros_like(ni),np.zeros_like(ni)
 
 
 
@@ -267,6 +274,8 @@ for i in range(len(eventlist)):
 		dT[j],dT_norm[j] = get_deltascalar(T[j], T_mean[j])
 		dvsqrdmag[j],dvsqrdmag_norm[j] = get_deltascalar(np.linalg.norm(vi[j])**2, np.linalg.norm(vivecs_mean[j])**2)
 		dBsqrdmag[j],dBsqrdmag_norm[j] = get_deltascalar(np.linalg.norm(Bvecs[j])**2, np.linalg.norm(Bvecs_mean[j])**2)
+		sigma_r[j] = get_residenergy(dv[j],dB[j],ni[j],mi)
+		sigma_c[j] = get_crosshelicity(dv[j],dB[j],ni[j],mi)
 
 	
 	allB_list.append(Bvecs)
@@ -285,6 +294,8 @@ for i in range(len(eventlist)):
 	alldT_list.append(dT)
 	alldvsqrdmag_list.append(dvsqrdmag)
 	alldBsqrdmag_list.append(dBsqrdmag)
+	allcrosshelicity_list.append(abs(sigma_c))
+	allresidenergy_list.append(abs(sigma_r))
 
 allB = np.concatenate(allB_list, axis=0)
 allv = np.concatenate(allv_list, axis=0)
@@ -303,12 +314,54 @@ alldn = np.concatenate(alldn_list, axis=0)
 alldT = np.concatenate(alldT_list, axis=0)
 alldvsqrdmag = np.concatenate(alldvsqrdmag_list, axis=0)
 alldBsqrdmag = np.concatenate(alldBsqrdmag_list, axis=0)
+allcrosshelicity = np.concatenate(allcrosshelicity_list,axis=0)
+allresidenergy = np.concatenate(allresidenergy_list,axis=0)
+allCpar = (alln*allTpar*allBmags**2)/(alln**3)
+allCperp = (alln*allTperp)/(alln*allBmags)
 
 allvmags = np.zeros_like(allv[:,0])
 allBmags = np.zeros_like(allB[:,0])
 for i in range(len(allv)):
 	allvmags[i] = np.linalg.norm(allv[i])
 	allBmags[i] = np.linalg.norm(allB[i])
+
+
+# def make_errors(var, upper,lower):
+# 	low = var-lower
+# 	upp = upper-var
+# 	return [low,upp]
+
+
+def get_solopcts():
+	nupper = 1e-6*np.nanpercentile(alln,75)
+	nlower = 1e-6*np.nanpercentile(alln,25)
+	npct = np.array([nlower,nupper])
+
+	Tupper = np.nanpercentile(allT,75)/(1.602e-19)
+	Tlower = np.nanpercentile(allT,25)/(1.602e-19)
+	Tpct = np.array([Tlower,Tupper])
+
+	vupper = 1e-3*np.nanpercentile(allvmags,75)
+	vlower = 1e-3*np.nanpercentile(allvmags,25)
+	vpct = np.array([vlower,vupper])
+	
+	Bupper = 1e9*np.nanpercentile(allBmags,75)
+	Blower = 1e9*np.nanpercentile(allBmags,25)
+	Bpct = np.array([Blower,Bupper])
+
+	
+	dBupper = 1e9*np.nanpercentile(np.sqrt(alldBsqrdmag),75)
+	dBlower = 1e9*np.nanpercentile(np.sqrt(alldBsqrdmag),25)
+	dBpct = np.array([dBlower,dBupper])
+
+	chupper = np.nanpercentile(allcrosshelicity,75)
+	chlower = np.nanpercentile(allcrosshelicity,25)
+	chpct = np.array([chlower,chupper])
+	
+	reupper = np.nanpercentile(allresidenergy,75)
+	relower = np.nanpercentile(allresidenergy,25)
+	repct = np.array([relower,reupper])
+	return npct,Tpct,vpct,Bpct,dBpct,chpct,repct
 
 
 
@@ -323,9 +376,12 @@ def get_solovals():
 	Bstd = 1e9*np.nanstd(allBmags)
 	dB = 1e9*np.sqrt(np.nanmean(alldBsqrdmag))
 	dBstd = 1e9*np.sqrt(np.nanstd(alldBsqrdmag))
+	ch = np.nanmean(allcrosshelicity)
+	chstd = np.nanstd(allcrosshelicity)
+	re = np.nanmean(allresidenergy)
+	restd = np.nanstd(allresidenergy)
 
-	return n,nstd,T,Tstd,v,vstd,B,Bstd,dB,dBstd
-
+	return n,nstd,T,Tstd,v,vstd,B,Bstd,dB,dBstd,ch,chstd,re,restd
 
 def get_solo_anisos():
 	betapar = allbeta_par
@@ -333,6 +389,14 @@ def get_solo_anisos():
 	return betapar, Tparperp
 
 
+def get_CGLvars():
+	Cpar = np.nanmean(allCpar)
+	Cparpct = np.array([np.nanpercentile(Cpar,25),np.nanpercentile(Cpar,75)])
+	Cperppct = np.array([np.nanpercentile(Cperp,25),np.nanpercentile(Cperp,75)])
+	Cperp = np.nanmean(allCperp)
+	Cparstd = np.nanstd(allCpar)
+	Cperpstd = np.nanstd(allCperp)
+	return Cpar,Cparstd,Cperp,Cperpstd
 # if (eventlist == enc23coronalhole_fast):
 # 	nsolo_fast,nstdsolo_fast,Tsolo_fast,Tstdsolo_fast,vsolo_fast,vstdsolo_fast,Bsolo_fast,Bstdsolo_fast,dBsolo_fast,dBstdsolo_fast = get_solovals()
 # 	betaparssolo_fast, Tparperpsolo_fast = get_solo_anisos()
@@ -346,24 +410,34 @@ def get_solo_anisos():
 # 	betaparssolo, Tparperpsolo = get_solo_anisos()
 # 	print("Variables")
 if (eventlist == enc23coronalhole_fast):
-	nsolo_fast,nstdsolo_fast,Tsolo_fast,Tstdsolo_fast,vsolo_fast,vstdsolo_fast,Bsolo_fast,Bstdsolo_fast,dBsolo_fast,dBstdsolo_fast = get_solovals()
+	nsolo_fast,nstdsolo_fast,Tsolo_fast,Tstdsolo_fast,vsolo_fast,vstdsolo_fast,Bsolo_fast,Bstdsolo_fast,dBsolo_fast,dBstdsolo_fast,chsolo_fast,chstdsolo_fast,resolo_fast,restdsolo_fast = get_solovals()
 	betaparssolo_fast, Tparperpsolo_fast = get_solo_anisos()
+	Cparsolo_fast,Cparstdsolo_fast,Cperpsolo_fast,Cperpstdsolo_fast = get_CGLvars()
 	print("Fast Variables")
 elif (eventlist == enc23coronalhole_preceding):
-	nsolo_preceding,nstdsolo_preceding,Tsolo_preceding,Tstdsolo_preceding,vsolo_preceding,vstdsolo_preceding,Bsolo_preceding,Bstdsolo_preceding,dBsolo_preceding,dBstdsolo_preceding = get_solovals()
+	nsolo_preceding,nstdsolo_preceding,Tsolo_preceding,Tstdsolo_preceding,vsolo_preceding,vstdsolo_preceding,Bsolo_preceding,Bstdsolo_preceding,dBsolo_preceding,dBstdsolo_preceding,chsolo_preceding,chstdsolo_preceding,resolo_preceding,restdsolo_preceding = get_solovals()
 	betaparssolo_preceding, Tparperpsolo_preceding = get_solo_anisos()
+	Cparsolo_preceding,Cparstdsolo_preceding,Cperpsolo_preceding,Cperpstdsolo_preceding = get_CGLvars()
 	print("Preceding Variables")
 elif (eventlist == enc23coronalhole_trailing):
-	nsolo_trailing,nstdsolo_trailing,Tsolo_trailing,Tstdsolo_trailing,vsolo_trailing,vstdsolo_trailing,Bsolo_trailing,Bstdsolo_trailing,dBsolo_trailing,dBstdsolo_trailing = get_solovals()
+	nsolo_trailing,nstdsolo_trailing,Tsolo_trailing,Tstdsolo_trailing,vsolo_trailing,vstdsolo_trailing,Bsolo_trailing,Bstdsolo_trailing,dBsolo_trailing,dBstdsolo_trailing,chsolo_trailing,chstdsolo_trailing,resolo_trailing,restdsolo_trailing = get_solovals()
 	betaparssolo_trailing, Tparperpsolo_trailing = get_solo_anisos()
+	Cparsolo_trailing,Cparstdsolo_trailing,Cperpsolo_trailing,Cperpstdsolo_trailing = get_CGLvars()
 	print("Trailing Variables")
 elif (eventlist == enc23coronalhole_shoulder):
-	nsolo_shoulder,nstdsolo_shoulder,Tsolo_shoulder,Tstdsolo_shoulder,vsolo_shoulder,vstdsolo_shoulder,Bsolo_shoulder,Bstdsolo_shoulder,dBsolo_shoulder,dBstdsolo_shoulder = get_solovals()
+	nsolo_shoulder,nstdsolo_shoulder,Tsolo_shoulder,Tstdsolo_shoulder,vsolo_shoulder,vstdsolo_shoulder,Bsolo_shoulder,Bstdsolo_shoulder,dBsolo_shoulder,dBstdsolo_shoulder,chsolo_shoulder,chstdsolo_shoulder,resolo_shoulder,restdsolo_shoulder = get_solovals()
 	betaparssolo_shoulder, Tparperpsolo_shoulder = get_solo_anisos()
+	Cparsolo_shoulder,Cparstdsolo_shoulder,Cperpsolo_shoulder,Cperpstdsolo_shoulder = get_CGLvars()
 	print("Shoulder Variables")
+elif (eventlist == enc23coronalhole_rarefaction):
+	nsolo_rarefaction,nstdsolo_rarefaction,Tsolo_rarefaction,Tstdsolo_rarefaction,vsolo_rarefaction,vstdsolo_rarefaction,Bsolo_rarefaction,Bstdsolo_rarefaction,dBsolo_rarefaction,dBstdsolo_rarefaction,chsolo_rarefaction,chstdsolo_rarefaction,resolo_rarefaction,restdsolo_rarefaction = get_solovals()
+	betaparssolo_rarefaction, Tparperpsolo_rarefaction = get_solo_anisos()
+	Cparsolo_rarefaction,Cparstdsolo_rarefaction,Cperpsolo_rarefaction,Cperpstdsolo_rarefaction = get_CGLvars()
+	print("Rarefaction Variables")
 else:
-	nsolo,nstdsolo,Tsolo,Tstdsolo,vsolo,vstdsolo,Bsolo,Bstdsolo,dBsolo,dBstdsolo = get_solovals()
+	nsolo,nstdsolo,Tsolo,Tstdsolo,vsolo,vstdsolo,Bsolo,Bstdsolo,dBsolo,dBstdsolo,chsolo,chstdsolo,resolo,restdsolo = get_solovals()
 	betaparssolo, Tparperpsolo = get_solo_anisos()
+	Cparsolo,Cparstdsolo,Cperpsolo,Cperpstdsolo = get_CGLvars()
 	print("Variables")
 # allmagperpart = 6.242e18*(allBmags**2)/(2*mu0*alln)
 

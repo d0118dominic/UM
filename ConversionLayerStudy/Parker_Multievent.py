@@ -387,7 +387,7 @@ event20 = ['2024-06-29/09:00','2024-06-29/14:00'], #E20
 
 
 # eventlist = [recent_perihelia[3]]
-eventlist = [['2024-06-27/00:00', '2024-07-04/00:00']]
+eventlist = [['2025-03-22/18:00','2025-03-23/18:00']]
 
 allpositions=np.array([])
 allvelocities=np.empty((0,3))
@@ -463,9 +463,9 @@ alldSp_norm = np.array([])
 
 for i in range(len(eventlist)):
 	trange=eventlist[i]
-	Bfld_vars = pyspedas.projects.psp.fields(trange=trange, level='l2', time_clip=True)
-	swp_vars = pyspedas.projects.psp.spi(trange=trange,level='l3',get_support_data=True,time_clip=True)
-	qtn_vars = pyspedas.projects.psp.fields(trange=trange,level='l3',datatype='sqtn_rfs_V1V2',time_clip=True)
+	Bfld_vars = pyspedas.projects.psp.fields(trange=trange, level='l2', time_clip=True,no_update=True)
+	swp_vars = pyspedas.projects.psp.spi(trange=trange,level='l3',get_support_data=True,time_clip=True,no_update=True)
+	qtn_vars = pyspedas.projects.psp.fields(trange=trange,level='l3',datatype='sqtn_rfs_V1V2',time_clip=True,no_update=True)
 	# alph_vars = pyspedas.projects.psp.spi(trange=trange,level='l3',datatype='sf0a_l3_mom',time_clip=True)
 	# voltages_vars = pyspedas.projects.psp.fields(trange=trange, datatype='dfb_wf_dvdc', level='l2',time_clip=True)
 	#On DC datatype: 'sqn_rfs_V1V2 has some kind of electron density & core temp, but looks weird
