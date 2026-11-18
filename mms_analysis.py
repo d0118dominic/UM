@@ -22,23 +22,28 @@ kb = 1.380649e-23
 # %%
  
 # Get Data
-# trange = ['2017-07-11/22:33:00', '2017-07-11/22:36:00'] #Classic EDR
-trange = ['2017-08-10/12:18:00', '2017-08-10/12:19:00']
-# trange = ['2017-06-17/20:24:05', '2017-06-17/20:24:10'] #Generator Event
+trange = ['2017-07-11/22:31:00', '2017-07-11/22:36:00'] #Classic Nightside IDR #MMS3
+# trange = ['2017-07-11/22:33:50', '2017-07-11/22:34:15'] #Classic Nightside EDR #MMS3
+# trange = ['2015-10-16/13:07:01', '2015-10-16/13:07:04'] #Classic Dayside EDR #MMS2
+# trange = ['2017-08-10/12:18:00', '2017-08-10/12:19:00']
+# trange = ['2017-06-17/20:24:05', '2017-06-17/20:24:10'] #Generator Event #MMS3 i think
 # trange = ['2016-12-09/09:03:54', '2016-12-09/09:03:55'] # E-only Event
 # trange = ['2016-12-09/09:02:00', '2016-12-09/09:05:00'] # 
-trange = ['2017-07-11/22:33:45', '2017-07-11/22:34:15'] #
+# trange = ['2017-07-11/22:33:45', '2017-07-11/22:34:15'] #
+# trange = ['2017-07-11/22:33:00', '2017-07-11/22:35:00'] #
 # trange = ['2022-03-06/05:47:00', '2022-03-06/06:10:00'] # 
-# trange = ['2022-03-06/06:01:00', '2022-03-06/06:02:00'] # Flux Rope
+# trange = ['2022-03-06/06:01:00', '2022-03-06/06:02:00'] # Flux Rope MMS1
 # trange = ['2015-09-08/11:01:19', '2015-09-08/11:01:22'] # #Low Shear EDR
  
-probe  = 1
+probe  = 3
 trange = trange
+
+no_update = True
  
-fgm_vars = fgm(probe = probe, data_rate = 'brst', trange=trange,time_clip=True)
-edp_vars = edp(probe = probe,data_rate = 'brst',trange=trange,time_clip=True) 
-fpi_vars = fpi(probe = probe,data_rate = 'brst',trange=trange,time_clip=True)
-scm_vars = scm(probe = probe, data_rate = 'brst', trange=trange,time_clip=True)
+fgm_vars = fgm(probe = probe, data_rate = 'brst', trange=trange,time_clip=True,no_update=no_update)
+edp_vars = edp(probe = probe,data_rate = 'brst',trange=trange,time_clip=True,no_update=no_update) 
+fpi_vars = fpi(probe = probe,data_rate = 'brst',trange=trange,time_clip=True,no_update=no_update)
+scm_vars = scm(probe = probe, data_rate = 'brst', trange=trange,time_clip=True,no_update=no_update)
 #%%
  
 def reform(var):
@@ -145,6 +150,10 @@ for i in range(len(B)):
     JdotE[i] = get_JdotE(J[i],E[i])
     JdotEprime[i] = get_JdotE(J[i],Eprime[i])
 
+store_data('JdotE', data={'x': timeax, 'y': 1e9*JdotE})
+store_data('|JdotE|', data={'x': timeax, 'y': 1e9*abs(JdotE)})
+store_data('JdotEprime', data={'x': timeax, 'y': 1e9*JdotEprime})
+store_data('|JdotEprime|', data={'x': timeax, 'y': 1e9*abs(JdotEprime)})
 # Initialize arrays — electrons
 tau_KS_e = np.zeros(len(B))
 l_KS_e   = np.zeros(len(B))
@@ -266,10 +275,10 @@ options('ti', 'ylog', True)
  
 options(['ti','te','li','le'], 'legend_size', 22)
  
-tplot('le')
-tplot('li')
-tplot('te')
-tplot('ti')
+# tplot('le')
+# tplot('li')
+# tplot('te')
+# tplot('ti')
  
 # %%
 
@@ -291,6 +300,91 @@ options('li_simple', 'ylog', True)
 options(['li_simple','le_simple'], 'legend_size', 22)
 
 tplot([B_name,'le_simple','li_simple'])
-# %%
 
 # %%
+electron_lengthscales = np.array([l_KS_e, l_HS_e, l_D_e, l_KH_e])
+ion_lengthscales      = np.array([l_KS_i, l_HS_i, l_D_i,l_KH_i])
+store_data('le_simple', data={'x': timeax, 'y': electron_lengthscales.T})
+store_data('li_simple', data={'x': timeax, 'y': ion_lengthscales.T})
+options('le_simple', 'legend_names', [r'$\ell_{KSe}$', r'$\ell_{HSe}$',r'$\ell_{De}$', r'$\ell_{KHe}$'])
+options('li_simple', 'legend_names', [r'$\ell_{KSi}$', r'$\ell_{HSi}$',r'$\ell_{Di}$', r'$\ell_{KHi}$'])
+options('le_simple', 'ytitle', 'Length Scale (m)')
+options('li_simple', 'ytitle', 'Length Scale (m)')
+options('le_simple', 'thick', [1,1])
+options('li_simple', 'thick', [1,1])
+options('le_simple', 'color', ['b','g','r','purple'])                    
+options('li_simple', 'color', ['b','g','r','purple'])                    
+options('le_simple', 'ylog', True)
+options('li_simple', 'ylog', True)
+options([B_name,'le_simple','li_simple'], 'legend_size',18)
+tplot([B_name,'le_simple','li_simple'])
+
+
+# electron_lengthscales = np.array([l_KS_e, l_D_e, l_KH_e])
+# ion_lengthscales      = np.array([l_KS_i, l_D_i,l_KH_i])
+# store_data('le_simple', data={'x': timeax, 'y': electron_lengthscales.T})
+# store_data('li_simple', data={'x': timeax, 'y': ion_lengthscales.T})
+# options('le_simple', 'legend_names', [r'$\ell_{KSe}$',r'$\ell_{De}$', r'$\ell_{KHe}$'])
+# options('li_simple', 'legend_names', [r'$\ell_{KSi}$',r'$\ell_{Di}$', r'$\ell_{KHi}$'])
+# options('le_simple', 'ytitle', 'Length Scale (m)')
+# # options('JdotE')
+# options('le_simple', 'thick', [1,1])
+# options('le_simple', 'color', ['b','r','purple'])                    
+# options('le_simple', 'ylog', True)
+
+# options(['li_simple','ti_simple','le_simple','te_simple'], 'legend_size', 20)
+# options(B_name, 'thick', 1)
+# tplot([B_name,'le_simple','li_simple'])
+
+
+# %%
+electron_timescales = np.array([tau_KS_e, tau_HS_e, tau_D_e, tau_KH_e])
+ion_timescales      = np.array([tau_KS_i, tau_HS_i, tau_D_i, tau_KH_i])
+store_data('te_simple', data={'x': timeax, 'y': electron_timescales.T})
+store_data('ti_simple', data={'x': timeax, 'y': ion_timescales.T})
+options('te_simple', 'legend_names', [r'$\tau_{KSe}$', r'$\tau_{HSe}$',r'$\tau_{De}$', r'$\tau_{KHe}$'])
+options('ti_simple', 'legend_names', [r'$\tau_{KSi}$', r'$\tau_{HSi}$',r'$\tau_{Di}$', r'$\tau_{KHi}$'])
+options('te_simple', 'ytitle', 'Time Scale (s)')
+options('ti_simple', 'ytitle', 'Time Scale (s)')
+options('li_simple', 'ytitle', 'Length Scale (m)')
+options('te_simple', 'thick', [1,1])
+options('ti_simple', 'thick', [1,1])
+options('le_simple', 'thick', [1,1])
+options('li_simple', 'thick', [1,1])
+
+options('te_simple', 'color', ['b','g','r','purple'])   
+options('ti_simple', 'color', ['b','g','r','purple'])                   
+options('te_simple', 'ylog', True)
+options('ti_simple', 'ylog', True)
+options('li_simple', 'ylog', True)
+
+options(['ti_simple','te_simple','li_simple','le_simple'], 'legend_size', 20)
+
+
+jde = np.array([JdotE,abs(JdotE)])
+store_data('te_simple', data={'x': timeax, 'y': electron_timescales.T})
+tplot('te_simple')
+
+#%%
+
+electron_lengthscales = np.array([l_KS_e, l_D_e])
+ion_lengthscales      = np.array([l_KS_i, l_D_i])
+store_data('le_simple', data={'x': timeax, 'y': electron_lengthscales.T})
+store_data('li_simple', data={'x': timeax, 'y': ion_lengthscales.T})
+options('le_simple', 'legend_names', [r'$\ell_{KSe}$', r'$\ell_{De}$'])
+options('le_simple', 'ytitle', 'Length Scale (m)')
+options('le_simple', 'thick', [1,1])
+options('le_simple', 'color', ['b','r'])                    
+options('le_simple', 'ylog', True)
+options('li_simple', 'legend_names', [r'$\ell_{KSi}$', r'$\ell_{Di}$'])
+options('li_simple', 'ytitle', 'Length Scale (m)')
+options('li_simple', 'thick', [1,1])
+options('li_simple', 'color', ['b','r'])                    
+options('li_simple', 'ylog', True)
+
+options(['li_simple','le_simple'], 'legend_size', 22)
+options(B_name, 'thick', 1)
+tplot([B_name,'le_simple','|JdotE|'])#,'ti_simple'])
+
+# %%
+tplot()

@@ -465,6 +465,7 @@ enc23coronalhole_rarefaction = [['2025-03-22/22:30','2025-03-23/00:30']] # Encou
 
 
 
+# enc23coronalhole_preceding = [['2025-03-23/13:30','2025-03-23/18:00']] # Encounter 21
 
 # longints = [['2025-06-15/00:00','2025-06-23/00:00'],['2025-03-18/00:00','2025-03-24/00:00']]
 # nears = near_subs+near_subs
@@ -495,8 +496,16 @@ recent_perihelia = [['2024-09-29/00:00', '2024-10-01/12:00'], #E21
 eventlist = sup_alfs_alt+sub_alfs+near_alfs+betaparlist
 # eventlist = [['2023-06-20/22:20','2023-06-20/22:40']]
 # eventlist = [['2023-06-20/21:30','2023-06-20/23:30']]
+
+# enc23coronalhole_preceding = [['2025-0:wq
+#3-23/08:00','2025-03-23/09:00']] # Encounter 21
 eventlist = [recent_perihelia[2]]
-eventlist = enc23coronalhole_fast
+# enc23coronalhole_shoulder = [['2025-03-23/04:30','2025-03-23/09:00']] # Encounter 21
+# enc23coronalhole_shoulder = [['2025-03-23/07:30','2025-03-23/09:00']] # Encounter 21
+# enc23coronalhole_shoulder = [['2025-03-23/09:00','2025-03-23/10:30']] # Encounter 21
+# enc23coronalhole_shoulder = [['2025-03-23/10:30','2025-03-23/12:00']] # Encounter 21
+# enc23coronalhole_shoulder = [['2025-03-23/12:00','2025-03-23/01:30']] # Encounter 21
+eventlist = enc23coronalhole_full
 # eventlist = [['2022-09-06/18:00','2022-09-07/06:00']]
 # eventlist = [sub_alfs[1]]
 
@@ -902,8 +911,8 @@ for i in range(len(eventlist)):
 		# sigma_r[i] = get_residenergy(vivecs[i],Bvecs[i],ni[i],mi)
 		# sigma_c[i] = get_crosshelicity(vivecs[i],Bvecs[i],ni[i],mi)
 
-		sigma_r[i] = abs(get_residenergy(dv[i],dB[i],ni[i],mi))
-		sigma_c[i] = abs(get_crosshelicity(dv[i],dB[i],ni[i],mi))
+		sigma_r[i] = get_residenergy(dv[i],dB[i],ni[i],mi)
+		sigma_c[i] = get_crosshelicity(dv[i],dB[i],ni[i],mi)
 
 
 
@@ -972,8 +981,10 @@ for i in range(len(eventlist)):
 	allTparperp = np.concat([allTparperp,Tpar/Tperp])
 	allbeta_par = np.concat([allbeta_par, beta_par])
 	
+	##########
+	# allBmags = np.concat([allBmags,Bmag_mean])
+	allBmags = np.concat([allBmags,abs(Br)])
 	
-	allBmags = np.concat([allBmags,Bmag_mean])
 	allvmags = np.concat([allvmags,vmag_mean])
 	allva = np.concat([allva,va_mean])
 	allva_inst = np.concat([allva_inst,va])
@@ -984,20 +995,52 @@ for i in range(len(eventlist)):
 	
 
 
+def get_psppcts():
+	nupper = 1e-6*np.nanpercentile(alln,75)
+	nlower = 1e-6*np.nanpercentile(alln,25)
+	npct = np.array([nlower,nupper])
+
+	Tupper = np.nanpercentile(allT,75)/(1.602e-19)
+	Tlower = np.nanpercentile(allT,25)/(1.602e-19)
+	Tpct = np.array([Tlower,Tupper])
+
+	vupper = 1e-3*np.nanpercentile(allvmags,75)
+	vlower = 1e-3*np.nanpercentile(allvmags,25)
+	vpct = np.array([vlower,vupper])
+	
+	Bupper = 1e9*np.nanpercentile(allBmags,75)
+	Blower = 1e9*np.nanpercentile(allBmags,25)
+	Bpct = np.array([Blower,Bupper])
+
+	
+	dBupper = 1e9*np.nanpercentile(alldBmag,75)
+	dBlower = 1e9*np.nanpercentile(alldBmag,25)
+	dBpct = np.array([dBlower,dBupper])
+
+	chupper = np.nanpercentile(allcrosshelicity,75)
+	chlower = np.nanpercentile(allcrosshelicity,25)
+	chpct = np.array([chlower,chupper])
+	
+	reupper = np.nanpercentile(allresidenergy,75)
+	relower = np.nanpercentile(allresidenergy,25)
+	repct = np.array([relower,reupper])
+	return npct,Tpct,vpct,Bpct,dBpct,chpct,repct
+
+
 def get_pspvals():
-	n = 1e-6*np.nanmean(alln)	
+	n = 1e-6*np.nanmedian(alln)	
 	nstd = 1e-6*np.nanstd(alln)
-	T = np.nanmean(allT)/(1.602e-19)
+	T = np.nanmedian(allT)/(1.602e-19)
 	Tstd = np.nanstd(allT)/(1.602e-19)
-	v = 1e-3*np.nanmean(allvmags)
+	v = 1e-3*np.nanmedian(allvmags)
 	vstd = 1e-3*np.nanstd(allvmags)
-	B = 1e9*np.nanmean(allBmags)
+	B = 1e9*np.nanmedian(allBmags)
 	Bstd = 1e9*np.nanstd(allBmags)
-	dB = 1e9*np.nanmean(alldBmag)
+	dB = 1e9*np.nanmedian(alldBmag)
 	dBstd = 1e9*np.nanstd(alldBmag)
-	ch = np.nanmean(allcrosshelicity)
+	ch = np.nanmedian(allcrosshelicity)
 	chstd = np.nanstd(allcrosshelicity)
-	re = np.nanmean(allresidenergy)
+	re = np.nanmedian(allresidenergy)
 	restd = np.nanstd(allresidenergy)
 
 	return n,nstd,T,Tstd,v,vstd,B,Bstd,dB,dBstd,ch,chstd,re,restd
@@ -1007,66 +1050,131 @@ def get_psp_anisos():
 	Tparperp = allTparperp
 	return betapar, Tparperp
 
-def get_CGLvars():
-	allCpar = (alln*kb*allTpar*allBmags**2)/(alln**3)
-	allCperp = (alln*kb*allTperp)/(alln*allBmags)
 
-	Cpar = np.nanmean(allCpar)
-	Cperp = np.nanmean(allCperp)
+def get_psp_CGLvars():
+	allCpar = (alln*allTpar*allBmags**2)/(alln**3)
+	allCperp = (alln*allTperp)/(alln*allBmags)
+
+	Cpar = np.nanmedian(allCpar)
+	Cperp = np.nanmedian(allCperp)
 	Cparstd = np.nanstd(allCpar)
 	Cperpstd = np.nanstd(allCperp)
-	return Cpar,Cparstd,Cperp,Cperpstd
+	Cparpct = np.array([np.nanpercentile(allCpar,25),np.nanpercentile(allCpar,75)])
+	Cperppct = np.array([np.nanpercentile(allCperp,25),np.nanpercentile(allCperp,75)])
+	return Cpar,Cparstd,Cperp,Cperpstd,Cparpct,Cperppct
 
-# if (eventlist == enc23coronalhole_fast):
-# 	npsp_fast,nstdpsp_fast,Tpsp_fast,Tstdpsp_fast,vpsp_fast,vstdpsp_fast,Bpsp_fast,Bstdpsp_fast,dBpsp_fast,dBstdpsp_fast = get_pspvals()
-# 	betaparspsp_fast, Tparperppsp_fast = get_psp_anisos()
-# 	print("Fast Variables")
-# elif (eventlist == enc23coronalhole_slow):
-# 	npsp_slow,nstdpsp_slow,Tpsp_slow,Tstdpsp_slow,vpsp_slow,vstdpsp_slow,Bpsp_slow,Bstdpsp_slow,dBpsp_slow,dBstdpsp_slow = get_pspvals()
-# 	betaparspsp_slow, Tparperppsp_slow = get_psp_anisos()
-# 	print("Slow Variables")
-# else:
-# 	npsp,nstdpsp,Tpsp,Tstdpsp,vpsp,vstdpsp,Bpsp,Bstdpsp,dBpsp,dBstdpsp = get_pspvals()
-# 	betaparspsp, Tparperppsp = get_psp_anisos()
-# 	print("Variables")
+
 if (eventlist == enc23coronalhole_fast):
 	npsp_fast,nstdpsp_fast,Tpsp_fast,Tstdpsp_fast,vpsp_fast,vstdpsp_fast,Bpsp_fast,Bstdpsp_fast,dBpsp_fast,dBstdpsp_fast,chpsp_fast,chstdpsp_fast,repsp_fast,restdpsp_fast = get_pspvals()
 	betaparspsp_fast, Tparperppsp_fast = get_psp_anisos()
-	Cparpsp_fast,Cparstdpsp_fast,Cperppsp_fast,Cperpstdpsp_fast = get_CGLvars()
+	Cparpsp_fast,Cparstdpsp_fast,Cperppsp_fast,Cperpstdpsp_fast,Cparpctpsp_fast,Cperppctpsp_fast = get_psp_CGLvars()
+	npctpsp_fast,Tpctpsp_fast,vpctpsp_fast,Bpctpsp_fast,dBpctpsp_fast,chpctpsp_fast,repctpsp_fast = get_psppcts()
 	print("Fast Variables")
 elif (eventlist == enc23coronalhole_preceding):
 	npsp_preceding,nstdpsp_preceding,Tpsp_preceding,Tstdpsp_preceding,vpsp_preceding,vstdpsp_preceding,Bpsp_preceding,Bstdpsp_preceding,dBpsp_preceding,dBstdpsp_preceding,chpsp_preceding,chstdpsp_preceding,repsp_preceding,restdpsp_preceding = get_pspvals()
 	betaparspsp_preceding, Tparperppsp_preceding = get_psp_anisos()
-	Cparpsp_preceding,Cparstdpsp_preceding,Cperppsp_preceding,Cperpstdpsp_preceding = get_CGLvars()
+	Cparpsp_preceding,Cparstdpsp_preceding,Cperppsp_preceding,Cperpstdpsp_preceding,Cparpctpsp_preceding,Cperppctpsp_preceding = get_psp_CGLvars()
+	npctpsp_preceding,Tpctpsp_preceding,vpctpsp_preceding,Bpctpsp_preceding,dBpctpsp_preceding,chpctpsp_preceding,repctpsp_preceding = get_psppcts()
 	print("Preceding Variables")
 elif (eventlist == enc23coronalhole_trailing):
 	npsp_trailing,nstdpsp_trailing,Tpsp_trailing,Tstdpsp_trailing,vpsp_trailing,vstdpsp_trailing,Bpsp_trailing,Bstdpsp_trailing,dBpsp_trailing,dBstdpsp_trailing,chpsp_trailing,chstdpsp_trailing,repsp_trailing,restdpsp_trailing = get_pspvals()
 	betaparspsp_trailing, Tparperppsp_trailing = get_psp_anisos()
-	Cparpsp_trailing,Cparstdpsp_trailing,Cperppsp_trailing,Cperpstdpsp_trailing = get_CGLvars()
+	Cparpsp_trailing,Cparstdpsp_trailing,Cperppsp_trailing,Cperpstdpsp_trailing,Cparpctpsp_trailing,Cperppctpsp_trailing = get_psp_CGLvars()
+	npctpsp_trailing,Tpctpsp_trailing,vpctpsp_trailing,Bpctpsp_trailing,dBpctpsp_trailing,chpctpsp_trailing,repctpsp_trailing = get_psppcts()
 	print("Trailing Variables")
 elif (eventlist == enc23coronalhole_shoulder):
 	npsp_shoulder,nstdpsp_shoulder,Tpsp_shoulder,Tstdpsp_shoulder,vpsp_shoulder,vstdpsp_shoulder,Bpsp_shoulder,Bstdpsp_shoulder,dBpsp_shoulder,dBstdpsp_shoulder,chpsp_shoulder,chstdpsp_shoulder,repsp_shoulder,restdpsp_shoulder = get_pspvals()
 	betaparspsp_shoulder, Tparperppsp_shoulder = get_psp_anisos()
-	Cparpsp_shoulder,Cparstdpsp_shoulder,Cperppsp_shoulder,Cperpstdpsp_shoulder = get_CGLvars()
+	Cparpsp_shoulder,Cparstdpsp_shoulder,Cperppsp_shoulder,Cperpstdpsp_shoulder,Cparpctpsp_shoulder,Cperppctpsp_shoulder = get_psp_CGLvars()
+	npctpsp_shoulder,Tpctpsp_shoulder,vpctpsp_shoulder,Bpctpsp_shoulder,dBpctpsp_shoulder,chpctpsp_shoulder,repctpsp_shoulder = get_psppcts()
 	print("Shoulder Variables")
 elif (eventlist == enc23coronalhole_rarefaction):
 	npsp_rarefaction,nstdpsp_rarefaction,Tpsp_rarefaction,Tstdpsp_rarefaction,vpsp_rarefaction,vstdpsp_rarefaction,Bpsp_rarefaction,Bstdpsp_rarefaction,dBpsp_rarefaction,dBstdpsp_rarefaction,chpsp_rarefaction,chstdpsp_rarefaction,repsp_rarefaction,restdpsp_rarefaction = get_pspvals()
 	betaparspsp_rarefaction, Tparperppsp_rarefaction = get_psp_anisos()
-	Cparpsp_rarefaction,Cparstdpsp_rarefaction,Cperppsp_rarefaction,Cperpstdpsp_rarefaction = get_CGLvars()
+	Cparpsp_rarefaction,Cparstdpsp_rarefaction,Cperppsp_rarefaction,Cperpstdpsp_rarefaction,Cparpctpsp_rarefaction,Cperppctpsp_rarefaction = get_psp_CGLvars()
+	npctpsp_rarefaction,Tpctpsp_rarefaction,vpctpsp_rarefaction,Bpctpsp_rarefaction,dBpctpsp_rarefaction,chpctpsp_rarefaction,repctpsp_rarefaction = get_psppcts()
 	print("Rarefaction Variables")
 else:
 	npsp,nstdpsp,Tpsp,Tstdpsp,vpsp,vstdpsp,Bpsp,Bstdpsp,dBpsp,dBstdpsp,chpsp,chstdpsp,repsp,restdpsp = get_pspvals()
 	betaparspsp, Tparperppsp = get_psp_anisos()
-	Cparpsp,Cparstdpsp,Cperppsp,Cperpstdpsp = get_CGLvars()
+	Cparpsp,Cparstdpsp,Cperppsp,Cperpstdpsp,Cparpctpsp,Cperppctpsp = get_psp_CGLvars()
+	npctpsp,Tpctpsp,vpctpsp,Bpctpsp,dBpctpsp,chpctpsp,repctpsp = get_psppcts()
 	print("Variables")
 
 
 
 
 
-
 #%%
-allmagperpart = 6.242e18*(allBmags**2)/(2*mu0*alln)
+def brazil_hist2d(z, x_label=r'$\beta_\parallel$', y_label=r'$T_{\perp}/T_{\parallel}$',
+     z_label='', title='', mask=None, nbins=50, mincount=10,
+     xrange=[-3,3], yrange=[-1,1], cmap='coolwarm', vmin=None, vmax=None):
+
+    mirror_params = [0.77, 0.76, -0.016]  # [a, b, beta0]
+    firehose_params = [-1.4, 1.0, -0.11]  # [a, b, beta0]
+    cyclotron_params = [0.45, 0.4, -0.0004]  # [a, b, beta0]
+    parfirehose_params = [-0.47, 0.53, 0.59]  # [a, b, beta0]
+
+    beta_par_range = np.logspace(xrange[0], xrange[1], 100)
+    mirror_threshold = stability_condition(beta_par_range, *mirror_params)
+    firehose_threshold = stability_condition(beta_par_range, *firehose_params)
+    cyclotron_threshold = stability_condition(beta_par_range, *cyclotron_params)
+    parfirehose_threshold = stability_condition(beta_par_range, *parfirehose_params)
+
+    if mask is None:
+        mask = np.ones(allTparperp.shape, dtype=bool)
+
+    x = allbeta_par[mask]
+    y = 1/allTparperp[mask]
+    z = z[mask]
+
+    valmask = np.isfinite(x) & np.isfinite(y) & np.isfinite(z)
+    x_valid = x[valmask]
+    y_valid = y[valmask]
+    z_valid = z[valmask]
+
+    xbins = np.logspace(xrange[0], xrange[1], nbins)
+    ybins = np.logspace(yrange[0], yrange[1], nbins)
+
+    hist, xedges, yedges, _ = binned_statistic_2d(x_valid, y_valid, z_valid, statistic='mean', bins=[xbins, ybins])
+    counts, _, _, _ = binned_statistic_2d(x_valid, y_valid, z_valid, statistic='count', bins=[xbins, ybins])
+    hist_masked = np.ma.masked_where(counts <= mincount, hist)
+
+    if vmin is None:
+        vmin = np.nanpercentile(hist_masked.compressed(), 2) if hist_masked.compressed().size else np.nanpercentile(z_valid, 2)
+    if vmax is None:
+        vmax = np.nanpercentile(hist_masked.compressed(), 98) if hist_masked.compressed().size else np.nanpercentile(z_valid, 98)
+
+    fig, ax = plt.subplots(figsize=(10, 8))
+
+    im = ax.pcolormesh(xedges, yedges, hist_masked.T, cmap=cmap, vmin=vmin, vmax=vmax)
+
+    cbar = plt.colorbar(im, ax=ax)
+    cbar.set_label(z_label, fontdict={'size': 15})
+
+    ax.set_facecolor('lightgray')
+    ax.set_xlabel(x_label, fontdict={'size': 15})
+    ax.set_ylabel(y_label, fontdict={'size': 15})
+    ax.set_title(title, fontdict={'size': 15})
+    ax.set_xlim(10**(xrange[0]), 10**(xrange[1]))
+    ax.set_ylim(10**(yrange[0]), 10**(yrange[1]))
+    ax.axhline(y=1, color='k', linestyle='-')
+    ax.axvline(x=1, color='k', linestyle='-')
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+    ax.plot(beta_par_range, mirror_threshold, label='Mirror', color='k', linestyle='dotted', linewidth=2)
+    ax.plot(beta_par_range, firehose_threshold, label='Oblique FH', color='k', linestyle='--', linewidth=2)
+    ax.plot(beta_par_range, cyclotron_threshold, label='IC', color='k', linestyle='dotted', linewidth=1)
+    ax.plot(beta_par_range, parfirehose_threshold, label='Parallel FH', color='k', linestyle='--', linewidth=1)
+    ax.legend()
+    plt.show()
+    return fig, ax
+# %%
+brazil_hist2d(allcrosshelicity, z_label=r'$\sigma_c$', cmap='seismic',vmin=-1,vmax=1,nbins=100)
+#%%
+brazil_hist2d(allresidenergy, z_label=r'$\sigma_r$', cmap='seismic',vmin=-1,vmax=1,nbins=100)
+
+# allmagperpart = 6.242e18*(allBmags**2)/(2*mu0*alln)
 
 #%%
 

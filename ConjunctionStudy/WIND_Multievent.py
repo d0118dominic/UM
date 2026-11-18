@@ -192,7 +192,7 @@ ev1_reduced = ['2025-03-28/00:00', '2025-03-31/00:00'] #Full interval
 # enc23coronalhole_fast = [['2025-03-27/12:00','2025-03-28/00:00']] # Encounter 21
 # enc23coronalhole_slow = [['2025-03-30/12:00','2025-03-31/12:00']] # Encounter 21
 # enc23coronalhole_bound = [['2025-03-26/06:00','2025-03-27/12:00']] # Encounter 21
-# enc23coronalhole_full = [['2025-03-26/00:00','2025-03-27/12:00']] # Encounter 21
+enc23coronalhole_full = [['2025-03-25/12:00','2025-04-01/00:00']] # Encounter 21
 
 
 enc23coronalhole_fast = [['2025-03-27/12:00','2025-03-28/00:00']] # Encounter 21
@@ -201,7 +201,13 @@ enc23coronalhole_trailing = [['2025-03-30/12:00','2025-03-31/12:00']] # Encounte
 enc23coronalhole_preceding = [['2025-03-25/22:00','2025-03-26/13:00']] # Encounter 21
 enc23coronalhole_rarefaction = [['2025-03-28/18:00','2025-03-30/00:00']] # Encounter 21
 
-eventlist=enc23coronalhole_fast
+
+
+
+
+# enc23coronalhole_rarefaction = [['2025-03-28/10:00','2025-03-30/12:00']] # Encounter 21
+# enc23coronalhole_preceding = [['2025-03-26/06:00','2025-03-26/15:00']] # Encounter 21
+eventlist=enc23coronalhole_full
 
 
 allB_list = []
@@ -345,8 +351,8 @@ for i in range(len(eventlist)):
 	alldT_list.append(dT)
 	alldvsqrdmag_list.append(dvsqrdmag)
 	alldBsqrdmag_list.append(dBsqrdmag)
-	allcrosshelicity_list.append(abs(sigma_c))
-	allresidenergy_list.append(abs(sigma_r))
+	allcrosshelicity_list.append(sigma_c)
+	allresidenergy_list.append(sigma_r)
 
 allB = np.concatenate(allB_list, axis=0)
 allv = np.concatenate(allv_list, axis=0)
@@ -372,22 +378,55 @@ allvmags = allv
 allBmags = np.zeros_like(allB[:,0])
 for i in range(len(allv)):
 	# allvmags[i] = np.linalg.norm(allv[i])
-	allBmags[i] = np.linalg.norm(allB[i])
+	# allBmags[i] = np.linalg.norm(allB[i])
+	allBmags[i] = abs(allB[i,0])
+
+def get_windpcts():
+	nupper = 1e-6*np.nanpercentile(alln,75)
+	nlower = 1e-6*np.nanpercentile(alln,25)
+	npct = np.array([nlower,nupper])
+
+	Tupper = np.nanpercentile(allT,75)/11604
+	Tlower = np.nanpercentile(allT,25)/11604
+	Tpct = np.array([Tlower,Tupper])
+
+	vupper = 1e-3*np.nanpercentile(allv,75)
+	vlower = 1e-3*np.nanpercentile(allv,25)
+	vpct = np.array([vlower,vupper])
+	
+	Bupper = 1e9*np.nanpercentile(allBmags,75)
+	Blower = 1e9*np.nanpercentile(allBmags,25)
+	Bpct = np.array([Blower,Bupper])
+
+	
+	dBupper = 1e9*np.nanpercentile(np.sqrt(alldBsqrdmag),75)
+	dBlower = 1e9*np.nanpercentile(np.sqrt(alldBsqrdmag),25)
+	dBpct = np.array([dBlower,dBupper])
+
+	chupper = np.nanpercentile(allcrosshelicity,75)
+	chlower = np.nanpercentile(allcrosshelicity,25)
+	chpct = np.array([chlower,chupper])
+	
+	reupper = np.nanpercentile(allresidenergy,75)
+	relower = np.nanpercentile(allresidenergy,25)
+	repct = np.array([relower,reupper])
+	return npct,Tpct,vpct,Bpct,dBpct,chpct,repct
+
 
 def get_windvals():
-	n = 1e-6*np.nanmean(alln)	
+	n = 1e-6*np.nanmedian(alln)	
 	nstd = 1e-6*np.nanstd(alln)
-	T = np.nanmean(allT)/11604
+	T = np.nanmedian(allT)/11604
 	Tstd = np.nanstd(allT)/11604
-	v = 1e-3*np.nanmean(allv)
+	v = 1e-3*np.nanmedian(allv)
 	vstd = 1e-3*np.nanstd(allv)
-	B = 1e9*np.nanmean(allBmags)
+	B = 1e9*np.nanmedian(allBmags)
 	Bstd = 1e9*np.nanstd(allBmags)
-	dB = 1e9*np.sqrt(np.nanmean(alldBsqrdmag))
+	dB = 1e9*np.sqrt(np.nanmedian(alldBsqrdmag))
 	dBstd = 1e9*np.sqrt(np.nanstd(alldBsqrdmag))
-	ch = np.nanmean(allcrosshelicity)
+	ch = np.nanmedian(allcrosshelicity)
 	chstd = np.nanstd(allcrosshelicity)
-	re = np.nanmean(allresidenergy)
+	re = np.nanmedian(allresidenergy)
 	restd = np.nanstd(allresidenergy)
 
 	return n,nstd,T,Tstd,v,vstd,B,Bstd,dB,dBstd,ch,chstd,re,restd
@@ -397,56 +436,126 @@ def get_wind_anisos():
 	Tparperp = allTparperp
 	return betapar, Tparperp
 
-def get_CGLvars():
+
+def get_wind_CGLvars():
 	allCpar = (alln*kb*allTpar*allBmags**2)/(alln**3)
 	allCperp = (alln*kb*allTperp)/(alln*allBmags)
 
-	Cpar = np.nanmean(allCpar)
-	Cperp = np.nanmean(allCperp)
+	Cpar = np.nanmedian(allCpar)
+	Cperp = np.nanmedian(allCperp)
 	Cparstd = np.nanstd(allCpar)
 	Cperpstd = np.nanstd(allCperp)
-	return Cpar,Cparstd,Cperp,Cperpstd
-# if (eventlist == enc23coronalhole_fast):
-# 	nwind_fast,nstdwind_fast,Twind_fast,Tstdwind_fast,vwind_fast,vstdwind_fast,Bwind_fast,Bstdwind_fast,dBwind_fast,dBstdwind_fast = get_windvals()
-# 	betaparswind_fast, Tparperpwind_fast = get_wind_anisos()
-# 	print("Fast Variables")
-# elif (eventlist == enc23coronalhole_slow):
-# 	nwind_slow,nstdwind_slow,Twind_slow,Tstdwind_slow,vwind_slow,vstdwind_slow,Bwind_slow,Bstdwind_slow,dBwind_slow,dBstdwind_slow = get_windvals()
-# 	betaparswind_slow, Tparperpwind_slow = get_wind_anisos()
-# 	print("Slow Variables")
-# else:
-# 	nwind,nstdwind,Twind,Tstdwind,vwind,vstdwind,Bwind,Bstdwind,dBwind,dBstdwind = get_windvals()
-# 	betaparswind, Tparperpwind = get_wind_anisos()
-# 	print("Variables")
+	Cparpct = np.array([np.nanpercentile(allCpar,25),np.nanpercentile(allCpar,75)])
+	Cperppct = np.array([np.nanpercentile(allCperp,25),np.nanpercentile(allCperp,75)])
+	return Cpar,Cparstd,Cperp,Cperpstd,Cparpct,Cperppct
+
 if (eventlist == enc23coronalhole_fast):
 	nwind_fast,nstdwind_fast,Twind_fast,Tstdwind_fast,vwind_fast,vstdwind_fast,Bwind_fast,Bstdwind_fast,dBwind_fast,dBstdwind_fast,chwind_fast,chstdwind_fast,rewind_fast,restdwind_fast = get_windvals()
 	betaparswind_fast, Tparperpwind_fast = get_wind_anisos()
-	Cparwind_fast,Cparstdwind_fast,Cperpwind_fast,Cperpstdwind_fast = get_CGLvars()
+	Cparwind_fast,Cparstdwind_fast,Cperpwind_fast,Cperpstdwind_fast,Cparpctwind_fast,Cperppctwind_fast = get_wind_CGLvars()
+	npctwind_fast,Tpctwind_fast,vpctwind_fast,Bpctwind_fast,dBpctwind_fast,chpctwind_fast,repctwind_fast = get_windpcts()
 	print("Fast Variables")
 elif (eventlist == enc23coronalhole_preceding):
 	nwind_preceding,nstdwind_preceding,Twind_preceding,Tstdwind_preceding,vwind_preceding,vstdwind_preceding,Bwind_preceding,Bstdwind_preceding,dBwind_preceding,dBstdwind_preceding,chwind_preceding,chstdwind_preceding,rewind_preceding,restdwind_preceding = get_windvals()
 	betaparswind_preceding, Tparperpwind_preceding = get_wind_anisos()
+	Cparwind_preceding,Cparstdwind_preceding,Cperpwind_preceding,Cperpstdwind_preceding,Cparpctwind_preceding,Cperppctwind_preceding = get_wind_CGLvars()
+	npctwind_preceding,Tpctwind_preceding,vpctwind_preceding,Bpctwind_preceding,dBpctwind_preceding,chpctwind_preceding,repctwind_preceding = get_windpcts()
 	print("Preceding Variables")
 elif (eventlist == enc23coronalhole_trailing):
 	nwind_trailing,nstdwind_trailing,Twind_trailing,Tstdwind_trailing,vwind_trailing,vstdwind_trailing,Bwind_trailing,Bstdwind_trailing,dBwind_trailing,dBstdwind_trailing,chwind_trailing,chstdwind_trailing,rewind_trailing,restdwind_trailing = get_windvals()
 	betaparswind_trailing, Tparperpwind_trailing = get_wind_anisos()
+	Cparwind_trailing,Cparstdwind_trailing,Cperpwind_trailing,Cperpstdwind_trailing,Cparpctwind_trailing,Cperppctwind_trailing = get_wind_CGLvars()
+	npctwind_trailing,Tpctwind_trailing,vpctwind_trailing,Bpctwind_trailing,dBpctwind_trailing,chpctwind_trailing,repctwind_trailing = get_windpcts()
 	print("Trailing Variables")
 elif (eventlist == enc23coronalhole_shoulder):
 	nwind_shoulder,nstdwind_shoulder,Twind_shoulder,Tstdwind_shoulder,vwind_shoulder,vstdwind_shoulder,Bwind_shoulder,Bstdwind_shoulder,dBwind_shoulder,dBstdwind_shoulder,chwind_shoulder,chstdwind_shoulder,rewind_shoulder,restdwind_shoulder = get_windvals()
 	betaparswind_shoulder, Tparperpwind_shoulder = get_wind_anisos()
+	Cparwind_shoulder,Cparstdwind_shoulder,Cperpwind_shoulder,Cperpstdwind_shoulder,Cparpctwind_shoulder,Cperppctwind_shoulder = get_wind_CGLvars()
+	npctwind_shoulder,Tpctwind_shoulder,vpctwind_shoulder,Bpctwind_shoulder,dBpctwind_shoulder,chpctwind_shoulder,repctwind_shoulder = get_windpcts()
 	print("Shoulder Variables")
 elif (eventlist == enc23coronalhole_rarefaction):
 	nwind_rarefaction,nstdwind_rarefaction,Twind_rarefaction,Tstdwind_rarefaction,vwind_rarefaction,vstdwind_rarefaction,Bwind_rarefaction,Bstdwind_rarefaction,dBwind_rarefaction,dBstdwind_rarefaction,chwind_rarefaction,chstdwind_rarefaction,rewind_rarefaction,restdwind_rarefaction = get_windvals()
 	betaparswind_rarefaction, Tparperpwind_rarefaction = get_wind_anisos()
+	Cparwind_rarefaction,Cparstdwind_rarefaction,Cperpwind_rarefaction,Cperpstdwind_rarefaction,Cparpctwind_rarefaction,Cperppctwind_rarefaction = get_wind_CGLvars()
+	npctwind_rarefaction,Tpctwind_rarefaction,vpctwind_rarefaction,Bpctwind_rarefaction,dBpctwind_rarefaction,chpctwind_rarefaction,repctwind_rarefaction = get_windpcts()
 	print("Rarefaction Variables")
 else:
 	nwind,nstdwind,Twind,Tstdwind,vwind,vstdwind,Bwind,Bstdwind,dBwind,dBstdwind,chwind,chstdwind,rewind,restdwind = get_windvals()
 	betaparswind, Tparperpwind = get_wind_anisos()
+	Cparwind,Cparstdwind,Cperpwind,Cperpstdwind,Cparpctwind,Cperppctwind = get_wind_CGLvars()
+	npctwind,Tpctwind,vpctwind,Bpctwind,dBpctwind,chpctwind,repctwind = get_windpcts()
 	print("Variables")
 # %%
+def brazil_hist2d(z, x_label=r'$\beta_\parallel$', y_label=r'$T_{\perp}/T_{\parallel}$',
+     z_label='', title='', mask=None, nbins=50, mincount=10,
+     xrange=[-3,3], yrange=[-1,1], cmap='coolwarm', vmin=None, vmax=None):
 
+    mirror_params = [0.77, 0.76, -0.016]  # [a, b, beta0]
+    firehose_params = [-1.4, 1.0, -0.11]  # [a, b, beta0]
+    cyclotron_params = [0.45, 0.4, -0.0004]  # [a, b, beta0]
+    parfirehose_params = [-0.47, 0.53, 0.59]  # [a, b, beta0]
 
+    beta_par_range = np.logspace(xrange[0], xrange[1], 100)
+    mirror_threshold = stability_condition(beta_par_range, *mirror_params)
+    firehose_threshold = stability_condition(beta_par_range, *firehose_params)
+    cyclotron_threshold = stability_condition(beta_par_range, *cyclotron_params)
+    parfirehose_threshold = stability_condition(beta_par_range, *parfirehose_params)
 
+    if mask is None:
+        mask = np.ones(allTparperp.shape, dtype=bool)
+
+    x = allbeta_par[mask]
+    y = 1/allTparperp[mask]
+    z = z[mask]
+
+    valmask = np.isfinite(x) & np.isfinite(y) & np.isfinite(z)
+    x_valid = x[valmask]
+    y_valid = y[valmask]
+    z_valid = z[valmask]
+
+    xbins = np.logspace(xrange[0], xrange[1], nbins)
+    ybins = np.logspace(yrange[0], yrange[1], nbins)
+
+    hist, xedges, yedges, _ = binned_statistic_2d(x_valid, y_valid, z_valid, statistic='mean', bins=[xbins, ybins])
+    counts, _, _, _ = binned_statistic_2d(x_valid, y_valid, z_valid, statistic='count', bins=[xbins, ybins])
+    hist_masked = np.ma.masked_where(counts <= mincount, hist)
+
+    if vmin is None:
+        vmin = np.nanpercentile(hist_masked.compressed(), 2) if hist_masked.compressed().size else np.nanpercentile(z_valid, 2)
+    if vmax is None:
+        vmax = np.nanpercentile(hist_masked.compressed(), 98) if hist_masked.compressed().size else np.nanpercentile(z_valid, 98)
+
+    fig, ax = plt.subplots(figsize=(10, 8))
+
+    im = ax.pcolormesh(xedges, yedges, hist_masked.T, cmap=cmap, vmin=vmin, vmax=vmax)
+
+    cbar = plt.colorbar(im, ax=ax)
+    cbar.set_label(z_label, fontdict={'size': 15})
+
+    ax.set_facecolor('lightgray')
+    ax.set_xlabel(x_label, fontdict={'size': 15})
+    ax.set_ylabel(y_label, fontdict={'size': 15})
+    ax.set_title(title, fontdict={'size': 15})
+    ax.set_xlim(10**(xrange[0]), 10**(xrange[1]))
+    ax.set_ylim(10**(yrange[0]), 10**(yrange[1]))
+    ax.axhline(y=1, color='k', linestyle='-')
+    ax.axvline(x=1, color='k', linestyle='-')
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+    ax.plot(beta_par_range, mirror_threshold, label='Mirror', color='k', linestyle='dotted', linewidth=2)
+    ax.plot(beta_par_range, firehose_threshold, label='Oblique FH', color='k', linestyle='--', linewidth=2)
+    ax.plot(beta_par_range, cyclotron_threshold, label='IC', color='k', linestyle='dotted', linewidth=1)
+    ax.plot(beta_par_range, parfirehose_threshold, label='Parallel FH', color='k', linestyle='--', linewidth=1)
+    ax.legend()
+    plt.show()
+    return fig, ax
+# %%
+brazil_hist2d(allcrosshelicity, z_label=r'$\sigma_c$', cmap='seismic',vmin=-1,vmax=1,nbins=20)
+#%%
+brazil_hist2d(allresidenergy, z_label=r'$\sigma_r$', cmap='seismic',vmin=-1,vmax=1,nbins=0)
+# %%
+
+#%%
 
 
 
